@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* MODO CLARO (Por defecto) */
+    --color-background: 241 245 249; /* Slate-100 - Más contraste que slate-50 */
+    --color-surface: 255 255 255; /* White - Contraste claro con el fondo */
+    --color-text-main: 15 23 42; /* Slate-900 - Texto principal muy oscuro */
+    --color-text-muted: 71 85 105; /* Slate-600 - Más oscuro que slate-500 para mejor lectura */
+    --color-border: 203 213 225; /* Slate-300 - Bordes más visibles */
+    --color-primary: 16 185 129; /* Emerald-500 */
+    --color-primary-fg: 255 255 255; /* Texto blanco sobre primario */
+  }
+
+  .dark {
+    /* MODO OSCURO */
+    --color-background: 15 23 42; /* Slate-900 */
+    --color-surface: 30 41 59; /* Slate-800 */
+    --color-text-main: 248 250 252; /* Slate-50 */
+    --color-text-muted: 148 163 184; /* Slate-400 */
+    --color-border: 51 65 85; /* Slate-700 */
+    --color-primary: 52 211 153; /* Emerald-400 (Más brillante para fondo oscuro) */
+    --color-primary-fg: 15 23 42; /* Texto oscuro sobre primario */
+  }
+
+  body {
+    @apply bg-background text-text-main transition-colors duration-300;
+  }
+}
