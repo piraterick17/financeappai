@@ -1,5 +1,4 @@
 import * as XLSX from 'xlsx';
-import { parse, isValid } from 'date-fns';
 
 export interface ParsedTransaction {
   date: string;
@@ -28,7 +27,7 @@ export interface ColumnMapping {
 
 export interface FileData {
   headers: string[];
-  rows: any[][];
+  rows: unknown[][];
 }
 
 export function parseAmount(amountStr: string | number): number {
@@ -76,7 +75,7 @@ export function parseDate(dateStr: string | number): string | null {
     'dic': '12', 'diciembre': '12', 'dec': '12', 'december': '12',
   };
 
-  const textMonthMatch = cleanDate.match(/(\d{1,2})[\/\-\s](ene|enero|feb|febrero|mar|marzo|abr|abril|may|mayo|jun|junio|jul|julio|ago|agosto|sept?|septiembre|oct|octubre|nov|noviembre|dic|diciembre|jan|january|feb|february|mar|march|apr|april|may|jun|june|jul|july|aug|august|sep|september|oct|october|nov|november|dec|december)[\/\-\s](\d{2,4})/i);
+  const textMonthMatch = cleanDate.match(/(\d{1,2})[/\-\s](ene|enero|feb|febrero|mar|marzo|abr|abril|may|mayo|jun|junio|jul|julio|ago|agosto|sept?|septiembre|oct|octubre|nov|noviembre|dic|diciembre|jan|january|feb|february|mar|march|apr|april|may|jun|june|jul|july|aug|august|sep|september|oct|october|nov|november|dec|december)[/\-\s](\d{2,4})/i);
 
   if (textMonthMatch) {
     const day = textMonthMatch[1].padStart(2, '0');
@@ -92,7 +91,7 @@ export function parseDate(dateStr: string | number): string | null {
     return `${year}-${month}-${day}`;
   }
 
-  const numericMatch = cleanDate.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+  const numericMatch = cleanDate.match(/(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})/);
   if (numericMatch) {
     const day = numericMatch[1].padStart(2, '0');
     const month = numericMatch[2].padStart(2, '0');
@@ -107,7 +106,7 @@ export function parseDate(dateStr: string | number): string | null {
     return `${year}-${month}-${day}`;
   }
 
-  const isoMatch = cleanDate.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+  const isoMatch = cleanDate.match(/(\d{4})[/-](\d{1,2})[/-](\d{1,2})/);
   if (isoMatch) {
     const year = isoMatch[1];
     const month = isoMatch[2].padStart(2, '0');
@@ -135,12 +134,12 @@ export function parseTime(timeStr: string | number): string | null {
 }
 
 export function mapRowToTransaction(
-  row: any[],
+  row: unknown[],
   mapping: ColumnMapping,
   rowNumber: number
 ): { transaction: ParsedTransaction | null; error: string | null } {
   try {
-    const dateStr = row[mapping.date];
+    const dateStr = row[mapping.date] as string | number;
     const date = parseDate(dateStr);
 
     if (!date) {
@@ -150,15 +149,15 @@ export function mapRowToTransaction(
       };
     }
 
-    const description = row[mapping.description]?.toString().trim() || 'Sin descripción';
+    const description = (row[mapping.description] as string | number)?.toString().trim() || 'Sin descripción';
 
-    const time = mapping.time !== undefined ? parseTime(row[mapping.time]) : null;
+    const time = mapping.time !== undefined ? parseTime(row[mapping.time] as string | number) : null;
 
     let amount = 0;
     let type: 'income' | 'expense' = 'expense';
 
     if (mapping.amount !== undefined) {
-      const parsedAmount = parseAmount(row[mapping.amount]);
+      const parsedAmount = parseAmount(row[mapping.amount] as string | number);
 
       if (parsedAmount === 0) {
         return {
@@ -170,8 +169,8 @@ export function mapRowToTransaction(
       amount = Math.abs(parsedAmount);
       type = parsedAmount >= 0 ? 'income' : 'expense';
     } else if (mapping.income !== undefined && mapping.expense !== undefined) {
-      const incomeAmount = parseAmount(row[mapping.income]);
-      const expenseAmount = parseAmount(row[mapping.expense]);
+      const incomeAmount = parseAmount(row[mapping.income] as string | number);
+      const expenseAmount = parseAmount(row[mapping.expense] as string | number);
 
       if (incomeAmount > 0) {
         amount = incomeAmount;
@@ -230,7 +229,12 @@ export function parseFileWithMapping(
   for (let i = startRow; i < data.rows.length; i++) {
     const row = data.rows[i];
 
-    if (!row || row.length === 0 || !row[mapping.date]) {
+    if (!row || row.length === 0) {
+      continue;
+    }
+
+    // Check if date column exists
+    if (!row[mapping.date]) {
       continue;
     }
 
@@ -258,8 +262,8 @@ export function parseExcelFile(file: File): Promise<FileData> {
         const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
         const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1, raw: false, defval: '' });
 
-        const rows = jsonData as any[][];
-        const headers = rows.length > 0 ? rows[0].map((h: any) => h?.toString().trim() || '') : [];
+        const rows = jsonData as unknown[][];
+        const headers = rows.length > 0 ? (rows[0] as unknown[]).map((h) => String(h || '').trim()) : [];
 
         resolve({ headers, rows });
       } catch (error) {

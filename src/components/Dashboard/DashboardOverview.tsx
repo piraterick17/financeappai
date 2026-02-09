@@ -11,6 +11,8 @@ import {
   MonthlyData,
 } from '../../utils/financialDataProcessing';
 
+import { processSubscriptions } from '../../utils/subscriptionProcessor';
+
 type Account = Database['public']['Tables']['accounts']['Row'];
 
 interface SummaryData {
@@ -44,6 +46,10 @@ export function DashboardOverview() {
   useEffect(() => {
     if (user) {
       checkAndRealizePendingTransactions();
+      processSubscriptions(user.id).then(() => {
+        // Reload summary after processing subscriptions to reflect changes
+        loadSummary();
+      });
     }
   }, [user]);
 
@@ -293,11 +299,10 @@ export function DashboardOverview() {
           <div className="border-t border-border pt-2 sm:pt-3 flex justify-between items-center">
             <span className="text-sm sm:text-base font-semibold text-text-main">Neto</span>
             <span
-              className={`text-sm sm:text-base font-bold ${
-                summary.monthlyIncome - summary.monthlyExpenses >= 0
-                  ? 'text-green-500'
-                  : 'text-red-500'
-              }`}
+              className={`text-sm sm:text-base font-bold ${summary.monthlyIncome - summary.monthlyExpenses >= 0
+                ? 'text-green-500'
+                : 'text-red-500'
+                }`}
             >
               {formatCurrency(summary.monthlyIncome - summary.monthlyExpenses)}
             </span>
@@ -309,11 +314,10 @@ export function DashboardOverview() {
                 <span className="text-xs text-text-muted/60" title="Incluye pagos e ingresos pendientes del mes">⏱️</span>
               </div>
               <span
-                className={`text-xs sm:text-sm font-semibold ${
-                  summary.projectedEndOfMonthBalance >= 0
-                    ? 'text-blue-400'
-                    : 'text-orange-400'
-                }`}
+                className={`text-xs sm:text-sm font-semibold ${summary.projectedEndOfMonthBalance >= 0
+                  ? 'text-blue-400'
+                  : 'text-orange-400'
+                  }`}
               >
                 {formatCurrency(summary.projectedEndOfMonthBalance)}
               </span>

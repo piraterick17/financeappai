@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { Search, Download, ChevronDown, Plus, Upload, Edit, Trash2, PlusCircle, ArrowRightLeft, CheckSquare, Square, Tag as TagIcon } from 'lucide-react';
+import { Search, Download, Upload, Edit, Trash2, PlusCircle, ArrowRightLeft, CheckSquare, Square } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../../contexts/AuthContext';
 import { AddMovementModal } from './AddMovementModal';
@@ -67,7 +67,8 @@ export function TransactionsList() {
   const accounts = accountsData || [];
   const categories = categoriesData || [];
   const suppliers = suppliersData || [];
-  const transactions = transactionsResponse?.transactions || [];
+
+  const transactions = useMemo(() => transactionsResponse?.transactions || [], [transactionsResponse]);
   const totalCount = transactionsResponse?.totalCount || 0;
 
   useEffect(() => {
@@ -199,7 +200,7 @@ export function TransactionsList() {
       await Promise.all(deletePromises);
       setSelectedTransactions(new Set());
       toast.success(`${count} transaccion${count > 1 ? 'es eliminadas' : ' eliminada'}`);
-    } catch (error) {
+    } catch {
       toast.error('Error al eliminar transacciones');
     }
   };
@@ -242,6 +243,7 @@ export function TransactionsList() {
       const updates = Array.from(selectedTransactions).map(id =>
         supabase
           .from('transactions')
+          // @ts-expect-error
           .update({ category_id: bulkCategoryId })
           .eq('id', id)
       );
@@ -254,7 +256,7 @@ export function TransactionsList() {
       toast.success('Categorías actualizadas');
 
       window.location.reload();
-    } catch (error) {
+    } catch {
       toast.error('Error al actualizar categorías');
     }
   };
@@ -376,179 +378,165 @@ export function TransactionsList() {
         )}
 
         <div className="bg-surface rounded-xl border border-border">
-            <div className="p-3 sm:p-4 border-b border-border">
-              <div className="flex flex-col gap-3 sm:gap-4">
-                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex w-full items-stretch rounded-lg border border-border overflow-hidden">
-                      <div className="text-text-muted flex bg-surface items-center justify-center pl-3 sm:pl-4">
-                        <Search className="w-4 h-4 sm:w-5 sm:h-5" />
-                      </div>
-                      <input
-                        className="flex w-full min-w-0 flex-1 resize-none overflow-hidden text-text-main focus:outline-none focus:ring-0 border-none bg-surface h-10 sm:h-12 placeholder:text-text-muted px-3 sm:px-4 text-sm sm:text-base font-normal"
-                        placeholder="Buscar transacciones..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                      />
+          <div className="p-3 sm:p-4 border-b border-border">
+            <div className="flex flex-col gap-3 sm:gap-4">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                <div className="flex-1 min-w-0">
+                  <div className="flex w-full items-stretch rounded-lg border border-border overflow-hidden">
+                    <div className="text-text-muted flex bg-surface items-center justify-center pl-3 sm:pl-4">
+                      <Search className="w-4 h-4 sm:w-5 sm:h-5" />
                     </div>
-                  </div>
-                  <button
-                    onClick={handleExport}
-                    className="flex items-center justify-center overflow-hidden rounded-lg h-10 sm:h-12 bg-primary text-primary-fg gap-2 text-xs sm:text-sm font-bold tracking-wide px-4 sm:px-5 hover:bg-opacity-90 transition whitespace-nowrap"
-                  >
-                    <Download className="w-4 h-4 sm:w-5 sm:h-5" />
-                    <span className="hidden sm:inline">Exportar Datos</span>
-                    <span className="sm:hidden">Exportar</span>
-                  </button>
-                </div>
-
-                <div className="flex gap-2 sm:gap-3 flex-wrap">
-                  <DateRangeFilter
-                    value={dateRange}
-                    onChange={setDateRange}
-                  />
-                  <FilterDropdown
-                    label="Cuentas/Tarjetas"
-                    options={accounts.map(acc => ({
-                      value: acc.id,
-                      label: `${acc.bank_name} - ${acc.name}`
-                    }))}
-                    selectedValues={selectedAccounts}
-                    onChange={setSelectedAccounts}
-                  />
-                  <FilterDropdown
-                    label="Categorías"
-                    options={categories.map(cat => ({
-                      value: cat.id,
-                      label: cat.name
-                    }))}
-                    selectedValues={selectedCategories}
-                    onChange={setSelectedCategories}
-                  />
-                  <FilterDropdown
-                    label="Proveedores"
-                    options={suppliers.map(sup => ({
-                      value: sup.id,
-                      label: sup.name
-                    }))}
-                    selectedValues={selectedSuppliers}
-                    onChange={setSelectedSuppliers}
-                  />
-                  <label className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border bg-surface text-text-main cursor-pointer hover:bg-background transition">
                     <input
-                      type="checkbox"
-                      checked={showProjected}
-                      onChange={(e) => setShowProjected(e.target.checked)}
-                      className="w-4 h-4 rounded border-border text-primary focus:ring-primary focus:ring-offset-0"
+                      className="flex w-full min-w-0 flex-1 resize-none overflow-hidden text-text-main focus:outline-none focus:ring-0 border-none bg-surface h-10 sm:h-12 placeholder:text-text-muted px-3 sm:px-4 text-sm sm:text-base font-normal"
+                      placeholder="Buscar transacciones..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
                     />
-                    <span className="text-sm font-medium">Ver Proyecciones</span>
-                  </label>
-                </div>
-
-                <AdvancedFilters
-                  minAmount={minAmount}
-                  maxAmount={maxAmount}
-                  onlyRecurring={onlyRecurring}
-                  onlyTransfers={onlyTransfers}
-                  onMinAmountChange={setMinAmount}
-                  onMaxAmountChange={setMaxAmount}
-                  onOnlyRecurringChange={setOnlyRecurring}
-                  onOnlyTransfersChange={setOnlyTransfers}
-                />
-              </div>
-            </div>
-
-            <div className="overflow-x-auto relative">
-              {isLoading && (
-                <div className="absolute inset-0 bg-surface/80 flex items-center justify-center z-10">
-                  <div className="flex flex-col items-center gap-3">
-                    <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-                    <p className="text-text-muted text-sm">Cargando transacciones...</p>
                   </div>
                 </div>
-              )}
-              {transactions.length === 0 && !isLoading ? (
-                <div className="text-center py-8 sm:py-12">
-                  <p className="text-text-muted text-base sm:text-lg">No hay transacciones registradas</p>
+                <button
+                  onClick={handleExport}
+                  className="flex items-center justify-center overflow-hidden rounded-lg h-10 sm:h-12 bg-primary text-primary-fg gap-2 text-xs sm:text-sm font-bold tracking-wide px-4 sm:px-5 hover:bg-opacity-90 transition whitespace-nowrap"
+                >
+                  <Download className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <span className="hidden sm:inline">Exportar Datos</span>
+                  <span className="sm:hidden">Exportar</span>
+                </button>
+              </div>
+
+              <div className="flex gap-2 sm:gap-3 flex-wrap">
+                <DateRangeFilter
+                  value={dateRange}
+                  onChange={setDateRange}
+                />
+                <FilterDropdown
+                  label="Cuentas/Tarjetas"
+                  options={accounts.map(acc => ({
+                    value: acc.id,
+                    label: `${acc.bank_name} - ${acc.name}`
+                  }))}
+                  selectedValues={selectedAccounts}
+                  onChange={setSelectedAccounts}
+                />
+                <FilterDropdown
+                  label="Categorías"
+                  options={categories.map(cat => ({
+                    value: cat.id,
+                    label: cat.name
+                  }))}
+                  selectedValues={selectedCategories}
+                  onChange={setSelectedCategories}
+                />
+                <FilterDropdown
+                  label="Proveedores"
+                  options={suppliers.map(sup => ({
+                    value: sup.id,
+                    label: sup.name
+                  }))}
+                  selectedValues={selectedSuppliers}
+                  onChange={setSelectedSuppliers}
+                />
+                <label className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border bg-surface text-text-main cursor-pointer hover:bg-background transition">
+                  <input
+                    type="checkbox"
+                    checked={showProjected}
+                    onChange={(e) => setShowProjected(e.target.checked)}
+                    className="w-4 h-4 rounded border-border text-primary focus:ring-primary focus:ring-offset-0"
+                  />
+                  <span className="text-sm font-medium">Ver Proyecciones</span>
+                </label>
+              </div>
+
+              <AdvancedFilters
+                minAmount={minAmount}
+                maxAmount={maxAmount}
+                onlyRecurring={onlyRecurring}
+                onlyTransfers={onlyTransfers}
+                onMinAmountChange={setMinAmount}
+                onMaxAmountChange={setMaxAmount}
+                onOnlyRecurringChange={setOnlyRecurring}
+                onOnlyTransfersChange={setOnlyTransfers}
+              />
+            </div>
+          </div>
+
+          <div className="overflow-x-auto relative">
+            {isLoading && (
+              <div className="absolute inset-0 bg-surface/80 flex items-center justify-center z-10">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                  <p className="text-text-muted text-sm">Cargando transacciones...</p>
                 </div>
-              ) : (
-                <table className="w-full text-xs sm:text-sm text-left">
-                  <thead className="text-xs text-text-muted uppercase bg-surface/50">
-                    <tr>
-                      <th className="px-3 sm:px-4 py-2 sm:py-3 w-10">
-                        <button onClick={handleSelectAll} className="text-text-muted hover:text-primary transition">
-                          {selectedTransactions.size === transactions.length && transactions.length > 0 ? (
-                            <CheckSquare className="w-4 h-4" />
-                          ) : (
-                            <Square className="w-4 h-4" />
-                          )}
-                        </button>
-                      </th>
-                      <th className="px-3 sm:px-4 lg:px-6 py-2 sm:py-3">Fecha</th>
-                      <th className="px-3 sm:px-4 lg:px-6 py-2 sm:py-3">Descripción</th>
-                      <th className="px-3 sm:px-4 lg:px-6 py-2 sm:py-3 hidden md:table-cell">Categoría</th>
-                      <th className="px-3 sm:px-4 lg:px-6 py-2 sm:py-3 hidden lg:table-cell">Cuenta</th>
-                      <th className="px-3 sm:px-4 lg:px-6 py-2 sm:py-3 text-right">Monto</th>
-                      <th className="px-3 sm:px-4 lg:px-6 py-2 sm:py-3 text-right hidden xl:table-cell">Saldo</th>
-                      <th className="px-3 sm:px-4 lg:px-6 py-2 sm:py-3 text-right">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {transactionsWithBalance.map((transaction, index) => {
-                      const isIncome = transaction.type === 'income';
-                      const amount = Number(transaction.amount);
-                      const isSelected = selectedTransactions.has(transaction.id);
-                      return (
-                        <tr
-                          key={transaction.id}
-                          className={`${
-                            index < transactions.length - 1 ? 'border-b border-border' : ''
-                          } ${transaction.is_projected ? 'bg-surface/30 opacity-70' : ''} ${
-                            isSelected ? 'bg-primary/10' : ''
+              </div>
+            )}
+            {transactions.length === 0 && !isLoading ? (
+              <div className="text-center py-8 sm:py-12">
+                <p className="text-text-muted text-base sm:text-lg">No hay transacciones registradas</p>
+              </div>
+            ) : (
+              <table className="w-full text-xs sm:text-sm text-left">
+                <thead className="text-xs text-text-muted uppercase bg-surface/50">
+                  <tr>
+                    <th className="px-3 sm:px-4 py-2 sm:py-3 w-10">
+                      <button onClick={handleSelectAll} className="text-text-muted hover:text-primary transition">
+                        {selectedTransactions.size === transactions.length && transactions.length > 0 ? (
+                          <CheckSquare className="w-4 h-4" />
+                        ) : (
+                          <Square className="w-4 h-4" />
+                        )}
+                      </button>
+                    </th>
+                    <th className="px-3 sm:px-4 lg:px-6 py-2 sm:py-3">Fecha</th>
+                    <th className="px-3 sm:px-4 lg:px-6 py-2 sm:py-3">Descripción</th>
+                    <th className="px-3 sm:px-4 lg:px-6 py-2 sm:py-3 hidden md:table-cell">Categoría</th>
+                    <th className="px-3 sm:px-4 lg:px-6 py-2 sm:py-3 hidden lg:table-cell">Cuenta</th>
+                    <th className="px-3 sm:px-4 lg:px-6 py-2 sm:py-3 text-right">Monto</th>
+                    <th className="px-3 sm:px-4 lg:px-6 py-2 sm:py-3 text-right hidden xl:table-cell">Saldo</th>
+                    <th className="px-3 sm:px-4 lg:px-6 py-2 sm:py-3 text-right">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {transactionsWithBalance.map((transaction, index) => {
+                    const isIncome = transaction.type === 'income';
+                    const amount = Number(transaction.amount);
+                    const isSelected = selectedTransactions.has(transaction.id);
+                    return (
+                      <tr
+                        key={transaction.id}
+                        className={`${index < transactions.length - 1 ? 'border-b border-border' : ''
+                          } ${transaction.is_projected ? 'bg-surface/30 opacity-70' : ''} ${isSelected ? 'bg-primary/10' : ''
                           } hover:bg-background/50 transition`}
-                        >
-                          <td className="px-3 sm:px-4 py-3 sm:py-4">
-                            <button
-                              onClick={() => handleSelectTransaction(transaction.id)}
-                              className="text-text-muted hover:text-primary transition"
-                            >
-                              {isSelected ? (
-                                <CheckSquare className="w-4 h-4" />
-                              ) : (
-                                <Square className="w-4 h-4" />
-                              )}
-                            </button>
-                          </td>
-                          <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-text-muted text-xs sm:text-sm">
-                            {formatDate(transaction.transaction_date)}
-                          </td>
-                          <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 font-medium text-text-main text-xs sm:text-sm">
-                            <div className="flex items-center gap-2">
-                              <div className="max-w-[120px] sm:max-w-none truncate">{transaction.description}</div>
-                              {transaction.is_projected && (
-                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-orange-500/20 text-orange-400 border border-orange-500/30">
-                                  Proyectado
-                                </span>
-                              )}
-                              {transaction.is_recurring && (
-                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-purple-500/20 text-purple-400 border border-purple-500/30">
-                                  Recurrente
-                                </span>
-                              )}
-                            </div>
-                            <div className="md:hidden text-xs text-text-muted capitalize mt-1">
-                              <div className="flex items-center gap-2">
-                                <span>{transaction.category}</span>
-                                {transaction.is_transfer && (
-                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-500/20 text-blue-400 border border-blue-500/30">
-                                    <ArrowRightLeft className="w-3 h-3" />
-                                    Transferencia
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-text-muted capitalize hidden md:table-cell text-xs sm:text-sm">
+                      >
+                        <td className="px-3 sm:px-4 py-3 sm:py-4">
+                          <button
+                            onClick={() => handleSelectTransaction(transaction.id)}
+                            className="text-text-muted hover:text-primary transition"
+                          >
+                            {isSelected ? (
+                              <CheckSquare className="w-4 h-4" />
+                            ) : (
+                              <Square className="w-4 h-4" />
+                            )}
+                          </button>
+                        </td>
+                        <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-text-muted text-xs sm:text-sm">
+                          {formatDate(transaction.transaction_date)}
+                        </td>
+                        <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 font-medium text-text-main text-xs sm:text-sm">
+                          <div className="flex items-center gap-2">
+                            <div className="max-w-[120px] sm:max-w-none truncate">{transaction.description}</div>
+                            {transaction.is_projected && (
+                              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-orange-500/20 text-orange-400 border border-orange-500/30">
+                                Proyectado
+                              </span>
+                            )}
+                            {transaction.is_recurring && (
+                              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-purple-500/20 text-purple-400 border border-purple-500/30">
+                                Recurrente
+                              </span>
+                            )}
+                          </div>
+                          <div className="md:hidden text-xs text-text-muted capitalize mt-1">
                             <div className="flex items-center gap-2">
                               <span>{transaction.category}</span>
                               {transaction.is_transfer && (
@@ -558,117 +546,127 @@ export function TransactionsList() {
                                 </span>
                               )}
                             </div>
-                          </td>
-                          <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-text-muted hidden lg:table-cell text-xs sm:text-sm">
-                            {transaction.accounts
-                              ? getAccountTypeLabel(transaction.accounts.type)
-                              : 'N/A'}
-                          </td>
-                          <td
-                            className={`px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-right font-medium text-xs sm:text-sm ${
-                              transaction.is_transfer
-                                ? 'text-blue-400'
-                                : isIncome
-                                ? 'text-green-500'
-                                : 'text-red-500'
-                            }`}
-                          >
-                            {transaction.is_transfer ? (
-                              <span className="inline-flex items-center gap-1">
-                                <ArrowRightLeft className="w-3 h-3 sm:w-4 sm:h-4" />
-                                {formatCurrency(Math.abs(amount))}
+                          </div>
+                        </td>
+                        <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-text-muted capitalize hidden md:table-cell text-xs sm:text-sm">
+                          <div className="flex items-center gap-2">
+                            <span>{transaction.category}</span>
+                            {transaction.is_transfer && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                                <ArrowRightLeft className="w-3 h-3" />
+                                Transferencia
                               </span>
-                            ) : (
-                              <>
-                                {isIncome ? '+' : '-'}
-                                {formatCurrency(Math.abs(amount))}
-                              </>
                             )}
-                          </td>
-                          <td className={`px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-right font-semibold text-xs sm:text-sm hidden xl:table-cell ${
-                            transaction.runningBalance >= 0 ? 'text-primary' : 'text-red-400'
+                          </div>
+                        </td>
+                        <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-text-muted hidden lg:table-cell text-xs sm:text-sm">
+                          {transaction.accounts
+                            ? getAccountTypeLabel(transaction.accounts.type)
+                            : 'N/A'}
+                        </td>
+                        <td
+                          className={`px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-right font-medium text-xs sm:text-sm ${transaction.is_transfer
+                            ? 'text-blue-400'
+                            : isIncome
+                              ? 'text-green-500'
+                              : 'text-red-500'
+                            }`}
+                        >
+                          {transaction.is_transfer ? (
+                            <span className="inline-flex items-center gap-1">
+                              <ArrowRightLeft className="w-3 h-3 sm:w-4 sm:h-4" />
+                              {formatCurrency(Math.abs(amount))}
+                            </span>
+                          ) : (
+                            <>
+                              {isIncome ? '+' : '-'}
+                              {formatCurrency(Math.abs(amount))}
+                            </>
+                          )}
+                        </td>
+                        <td className={`px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-right font-semibold text-xs sm:text-sm hidden xl:table-cell ${transaction.runningBalance >= 0 ? 'text-primary' : 'text-red-400'
                           }`}>
-                            {formatCurrency(transaction.runningBalance)}
-                          </td>
-                          <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-right">
-                            <button
-                              onClick={() => setEditingTransaction(transaction)}
-                              className="p-1 text-text-muted hover:text-primary transition"
-                            >
-                              <Edit className="w-3 h-3 sm:w-4 sm:h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(transaction.id)}
-                              className="p-1 text-text-muted hover:text-red-500 transition"
-                            >
-                              <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              )}
-            </div>
-
-            {totalCount > 0 && (
-              <div className="px-4 py-3 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="flex items-center gap-2 text-sm text-text-muted">
-                  <span>Mostrar</span>
-                  <select
-                    value={itemsPerPage}
-                    onChange={(e) => {
-                      setItemsPerPage(Number(e.target.value));
-                      setCurrentPage(1);
-                    }}
-                    className="px-2 py-1 rounded bg-surface text-text-main border border-border focus:outline-none focus:ring-2 focus:ring-primary/50"
-                  >
-                    <option value={10}>10</option>
-                    <option value={25}>25</option>
-                    <option value={50}>50</option>
-                    <option value={100}>100</option>
-                  </select>
-                  <span>
-                    Mostrando {Math.min((currentPage - 1) * itemsPerPage + 1, totalCount)} - {Math.min(currentPage * itemsPerPage, totalCount)} de {totalCount}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setCurrentPage(1)}
-                    disabled={currentPage === 1}
-                    className="px-3 py-1 rounded bg-surface text-text-main hover:bg-surface/80 disabled:opacity-50 disabled:cursor-not-allowed transition text-sm"
-                  >
-                    Primera
-                  </button>
-                  <button
-                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                    disabled={currentPage === 1}
-                    className="px-3 py-1 rounded bg-surface text-text-main hover:bg-surface/80 disabled:opacity-50 disabled:cursor-not-allowed transition text-sm"
-                  >
-                    Anterior
-                  </button>
-                  <span className="px-3 py-1 text-sm text-text-muted">
-                    Página {currentPage} de {Math.ceil(totalCount / itemsPerPage)}
-                  </span>
-                  <button
-                    onClick={() => setCurrentPage(prev => Math.min(Math.ceil(totalCount / itemsPerPage), prev + 1))}
-                    disabled={currentPage >= Math.ceil(totalCount / itemsPerPage)}
-                    className="px-3 py-1 rounded bg-surface text-text-main hover:bg-surface/80 disabled:opacity-50 disabled:cursor-not-allowed transition text-sm"
-                  >
-                    Siguiente
-                  </button>
-                  <button
-                    onClick={() => setCurrentPage(Math.ceil(totalCount / itemsPerPage))}
-                    disabled={currentPage >= Math.ceil(totalCount / itemsPerPage)}
-                    className="px-3 py-1 rounded bg-surface text-text-main hover:bg-surface/80 disabled:opacity-50 disabled:cursor-not-allowed transition text-sm"
-                  >
-                    Última
-                  </button>
-                </div>
-              </div>
+                          {formatCurrency(transaction.runningBalance)}
+                        </td>
+                        <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-right">
+                          <button
+                            onClick={() => setEditingTransaction(transaction)}
+                            className="p-1 text-text-muted hover:text-primary transition"
+                          >
+                            <Edit className="w-3 h-3 sm:w-4 sm:h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(transaction.id)}
+                            className="p-1 text-text-muted hover:text-red-500 transition"
+                          >
+                            <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             )}
+          </div>
+
+          {totalCount > 0 && (
+            <div className="px-4 py-3 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-2 text-sm text-text-muted">
+                <span>Mostrar</span>
+                <select
+                  value={itemsPerPage}
+                  onChange={(e) => {
+                    setItemsPerPage(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="px-2 py-1 rounded bg-surface text-text-main border border-border focus:outline-none focus:ring-2 focus:ring-primary/50"
+                >
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+                <span>
+                  Mostrando {Math.min((currentPage - 1) * itemsPerPage + 1, totalCount)} - {Math.min(currentPage * itemsPerPage, totalCount)} de {totalCount}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1 rounded bg-surface text-text-main hover:bg-surface/80 disabled:opacity-50 disabled:cursor-not-allowed transition text-sm"
+                >
+                  Primera
+                </button>
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1 rounded bg-surface text-text-main hover:bg-surface/80 disabled:opacity-50 disabled:cursor-not-allowed transition text-sm"
+                >
+                  Anterior
+                </button>
+                <span className="px-3 py-1 text-sm text-text-muted">
+                  Página {currentPage} de {Math.ceil(totalCount / itemsPerPage)}
+                </span>
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(Math.ceil(totalCount / itemsPerPage), prev + 1))}
+                  disabled={currentPage >= Math.ceil(totalCount / itemsPerPage)}
+                  className="px-3 py-1 rounded bg-surface text-text-main hover:bg-surface/80 disabled:opacity-50 disabled:cursor-not-allowed transition text-sm"
+                >
+                  Siguiente
+                </button>
+                <button
+                  onClick={() => setCurrentPage(Math.ceil(totalCount / itemsPerPage))}
+                  disabled={currentPage >= Math.ceil(totalCount / itemsPerPage)}
+                  className="px-3 py-1 rounded bg-surface text-text-main hover:bg-surface/80 disabled:opacity-50 disabled:cursor-not-allowed transition text-sm"
+                >
+                  Última
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

@@ -16,7 +16,7 @@ interface BudgetLimitModalProps {
 
 export function BudgetLimitModal({ onClose, onSuccess, existingBudget }: BudgetLimitModalProps) {
   const { user } = useAuth();
-  const { categories, loading: categoriesLoading } = useCategories();
+  const { data: categories = [], isLoading: categoriesLoading } = useCategories(user?.id);
   const [selectedCategoryId, setSelectedCategoryId] = useState(existingBudget?.category_id || '');
   const [amount, setAmount] = useState(existingBudget?.amount.toString() || '');
   const [loading, setLoading] = useState(false);

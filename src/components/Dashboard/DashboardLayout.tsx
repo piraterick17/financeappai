@@ -1,46 +1,44 @@
 import { ReactNode, useState } from 'react';
-import { Wallet, LayoutDashboard, CreditCard, TrendingUp, BarChart3, Settings, LogOut, Menu, X, Moon, Sun } from 'lucide-react';
+import { NavLink, useLocation, Outlet } from 'react-router-dom';
+import { Wallet, LayoutDashboard, CreditCard, TrendingUp, BarChart3, Settings, LogOut, Menu, X, Moon, Sun, CalendarRange } from 'lucide-react';
+
+// ...
+
+
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 
 interface DashboardLayoutProps {
-  children: ReactNode;
-  activeTab: string;
-  onTabChange: (tab: string) => void;
+  children?: ReactNode;
 }
 
-export function DashboardLayout({ children, activeTab, onTabChange }: DashboardLayoutProps) {
+export function DashboardLayout({ children }: DashboardLayoutProps) {
   const { signOut, user } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const location = useLocation();
 
   const navItems = [
-    { id: 'dashboard', label: 'Resumen', icon: LayoutDashboard },
-    { id: 'accounts', label: 'Cuentas', icon: CreditCard },
-    { id: 'transactions', label: 'Transacciones', icon: TrendingUp },
-    { id: 'forecast', label: 'Presupuestos', icon: BarChart3 },
-    { id: 'administration', label: 'Administración', icon: Settings },
+    { path: '/', label: 'Resumen', icon: LayoutDashboard },
+    { path: '/accounts', label: 'Cuentas', icon: CreditCard },
+    { path: '/transactions', label: 'Transacciones', icon: TrendingUp },
+    { path: '/subscriptions', label: 'Suscripciones', icon: CalendarRange },
+    { path: '/forecast', label: 'Presupuestos', icon: BarChart3 },
+    { path: '/administration', label: 'Administración', icon: Settings },
   ];
-
-  const handleTabChange = (tab: string) => {
-    onTabChange(tab);
-    setSidebarOpen(false);
-  };
 
   return (
     <div className="min-h-screen bg-background">
       <div className="flex">
         <div
-          className={`fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden transition-opacity duration-300 ${
-            sidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
-          }`}
+          className={`fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden transition-opacity duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            }`}
           onClick={() => setSidebarOpen(false)}
         />
 
         <aside
-          className={`fixed lg:sticky top-0 left-0 h-screen bg-surface border-r border-border z-40 transition-transform duration-300 ease-in-out ${
-            sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-          } lg:translate-x-0 w-64 flex-shrink-0`}
+          className={`fixed lg:sticky top-0 left-0 h-screen bg-surface border-r border-border z-40 transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+            } lg:translate-x-0 w-64 flex-shrink-0`}
         >
           <div className="h-full flex flex-col">
             <div className="p-6">
@@ -62,20 +60,22 @@ export function DashboardLayout({ children, activeTab, onTabChange }: DashboardL
               <nav className="space-y-2">
                 {navItems.map((item) => {
                   const Icon = item.icon;
-                  const isActive = activeTab === item.id;
                   return (
-                    <button
-                      key={item.id}
-                      onClick={() => handleTabChange(item.id)}
-                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition whitespace-nowrap ${
-                        isActive
+                    <NavLink
+                      key={item.path}
+                      to={item.path}
+                      onClick={() => setSidebarOpen(false)}
+                      className={({ isActive }) =>
+                        `w-full flex items-center gap-3 px-4 py-3 rounded-xl transition whitespace-nowrap ${isActive || (item.path === '/' && location.pathname === '/')
                           ? 'bg-primary/20 text-primary font-semibold'
                           : 'text-text-muted hover:bg-surface/50 hover:text-text-main'
-                      }`}
+                        }`
+                      }
+                      end={item.path === '/'}
                     >
                       <Icon className="w-5 h-5" />
                       {item.label}
-                    </button>
+                    </NavLink>
                   );
                 })}
               </nav>
@@ -122,7 +122,7 @@ export function DashboardLayout({ children, activeTab, onTabChange }: DashboardL
           </div>
 
           <main className="min-h-screen">
-            {children}
+            {children || <Outlet />}
           </main>
         </div>
       </div>

@@ -5,6 +5,11 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthPage } from './pages/AuthPage';
 import { DashboardPage } from './pages/DashboardPage';
 
+
+// ...
+
+
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -14,6 +19,8 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
 function AppContent() {
   const { user, loading } = useAuth();
@@ -26,7 +33,15 @@ function AppContent() {
     );
   }
 
-  return user ? <DashboardPage /> : <AuthPage />;
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/login" element={!user ? <AuthPage /> : <Navigate to="/" replace />} />
+
+        <Route path="/*" element={user ? <DashboardPage /> : <Navigate to="/login" replace />} />
+      </Routes>
+    </BrowserRouter>
+  );
 }
 
 function App() {
@@ -42,4 +57,5 @@ function App() {
   );
 }
 
+// Forced update
 export default App;

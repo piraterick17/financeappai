@@ -97,7 +97,7 @@ export function categorizeTransaction(description: string): string | null {
   return null;
 }
 
-export function categorizeTransactions(transactions: any[]): any[] {
+export function categorizeTransactions<T extends { description: string; category?: string | null }>(transactions: T[]): T[] {
   return transactions.map(transaction => ({
     ...transaction,
     category: transaction.category || categorizeTransaction(transaction.description) || 'Sin categorizar',

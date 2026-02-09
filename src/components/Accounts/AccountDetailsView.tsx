@@ -8,17 +8,24 @@ import { Database } from '../../lib/database.types';
 type Account = Database['public']['Tables']['accounts']['Row'];
 type Transaction = Database['public']['Tables']['transactions']['Row'];
 
+type CreditAccount = Account & {
+  cut_off_day?: number;
+  payment_due_day?: number;
+};
+
+import { EditAccountModal } from './EditAccountModal';
+
 interface AccountDetailsViewProps {
   accountId: string;
   onBack: () => void;
-  onEdit: (account: Account) => void;
 }
 
-export function AccountDetailsView({ accountId, onBack, onEdit }: AccountDetailsViewProps) {
+export function AccountDetailsView({ accountId, onBack }: AccountDetailsViewProps) {
   const { user } = useAuth();
   const [account, setAccount] = useState<Account | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingAccount, setEditingAccount] = useState<Account | null>(null);
 
   useEffect(() => {
     if (user && accountId) {
@@ -178,22 +185,24 @@ export function AccountDetailsView({ accountId, onBack, onEdit }: AccountDetails
                         </p>
                       </div>
                     )}
+
+
                     {account.type === 'credit' &&
-                      ((account as any).cut_off_day || (account as any).payment_due_day) && (
+                      ((account as CreditAccount).cut_off_day || (account as CreditAccount).payment_due_day) && (
                         <div className="flex gap-4 mt-3 pt-3 border-t border-gray-700">
-                          {(account as any).cut_off_day && (
+                          {(account as CreditAccount).cut_off_day && (
                             <div>
                               <p className="text-[#92c9a4] text-xs">Día de Corte</p>
                               <p className="text-white text-sm font-medium">
-                                Día {(account as any).cut_off_day}
+                                Día {(account as CreditAccount).cut_off_day}
                               </p>
                             </div>
                           )}
-                          {(account as any).payment_due_day && (
+                          {(account as CreditAccount).payment_due_day && (
                             <div>
                               <p className="text-[#92c9a4] text-xs">Día de Pago</p>
                               <p className="text-white text-sm font-medium">
-                                Día {(account as any).payment_due_day}
+                                Día {(account as CreditAccount).payment_due_day}
                               </p>
                             </div>
                           )}
@@ -215,7 +224,7 @@ export function AccountDetailsView({ accountId, onBack, onEdit }: AccountDetails
                 <span>Realizar Transferencia</span>
               </button>
               <button
-                onClick={() => onEdit(account)}
+                onClick={() => setEditingAccount(account)}
                 className="flex w-full lg:min-w-[200px] items-center justify-center gap-2 rounded-lg h-10 sm:h-11 px-4 bg-[#23482f] text-white text-sm font-bold hover:bg-[#2d5a3d] transition"
               >
                 <Edit className="w-4 h-4" />
@@ -274,9 +283,8 @@ export function AccountDetailsView({ accountId, onBack, onEdit }: AccountDetails
                           {transaction.category}
                         </td>
                         <td
-                          className={`p-4 text-sm font-medium text-right ${
-                            isIncome ? 'text-[#11d452]' : 'text-red-400'
-                          }`}
+                          className={`p-4 text-sm font-medium text-right ${isIncome ? 'text-[#11d452]' : 'text-red-400'
+                            }`}
                         >
                           {isIncome ? '+' : '-'}
                           {formatCurrency(Math.abs(amount))}
@@ -290,6 +298,17 @@ export function AccountDetailsView({ accountId, onBack, onEdit }: AccountDetails
           </div>
         </div>
       </div>
+
+      {editingAccount && (
+        <EditAccountModal
+          account={editingAccount}
+          onClose={() => setEditingAccount(null)}
+          onSuccess={() => {
+            setEditingAccount(null);
+            loadAccountDetails();
+          }}
+        />
+      )}
     </div>
   );
 }

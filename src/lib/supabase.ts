@@ -14,12 +14,7 @@ console.log("Todas las envs:", import.meta.env); // Esto nos mostrará todo lo q
 console.log("---------------------");
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  // Comentamos el error temporalmente para que la app no "explote" en blanco
-  // throw new Error('Missing Supabase environment variables');
-  console.error("Faltan las variables, pero continuamos para ver el log.");
+  throw new Error('Missing Supabase environment variables. Please check your .env file.');
 }
 
-export const supabase = createClient<Database>(
-  supabaseUrl || "https://placeholder.url", // Valor falso temporal para que no rompa el inicio
-  supabaseAnonKey || "placeholder-key"
-);
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);

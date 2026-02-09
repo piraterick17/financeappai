@@ -1,9 +1,12 @@
 import { supabase } from '../lib/supabase';
+import { Database } from '../lib/database.types';
+
+type Transaction = Database['public']['Tables']['transactions']['Row'];
 
 export interface DuplicateCheckResult {
   isDuplicate: boolean;
   matchType?: 'exact' | 'similar';
-  matchedTransaction?: any;
+  matchedTransaction?: Transaction;
   similarity?: number;
 }
 
@@ -37,7 +40,9 @@ export async function checkForDuplicates(
     .eq('account_id', accountId)
     .eq('transaction_date', date)
     .gte('amount', amount * 0.95)
-    .lte('amount', amount * 1.05);
+    .gte('amount', amount * 0.95)
+    .lte('amount', amount * 1.05)
+    .returns<Transaction[]>(); // Explicitly hint the return type
 
   if (similarTransactions && similarTransactions.length > 0) {
     for (const transaction of similarTransactions) {
@@ -114,15 +119,16 @@ export async function batchCheckForDuplicates(
     .select('*')
     .eq('user_id', userId)
     .eq('account_id', accountId)
-    .in('transaction_date', dates);
+    .in('transaction_date', dates)
+    .returns<Transaction[]>();
 
   for (let i = 0; i < transactions.length; i++) {
     const transaction = transactions[i];
 
     const exactMatch = existingTransactions?.find(
-      et =>
+      (et: Transaction) =>
         et.transaction_date === transaction.date &&
-        Math.abs(parseFloat(et.amount) - transaction.amount) < 0.01
+        Math.abs(et.amount - transaction.amount) < 0.01 // Fixed parseFloat(et.amount) since it is already number in DB types
     );
 
     if (exactMatch) {
@@ -135,10 +141,10 @@ export async function batchCheckForDuplicates(
     }
 
     const similarMatches = existingTransactions?.filter(
-      et =>
+      (et: Transaction) =>
         et.transaction_date === transaction.date &&
-        parseFloat(et.amount) >= transaction.amount * 0.95 &&
-        parseFloat(et.amount) <= transaction.amount * 1.05
+        et.amount >= transaction.amount * 0.95 &&
+        et.amount <= transaction.amount * 1.05
     );
 
     if (similarMatches && similarMatches.length > 0) {

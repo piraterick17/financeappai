@@ -119,6 +119,7 @@ export interface Database {
           import_batch_id: string | null
           is_duplicate: boolean
           category: string | null
+          is_projected: boolean
           created_at: string
           updated_at: string
         }
@@ -141,6 +142,7 @@ export interface Database {
           import_batch_id?: string | null
           is_duplicate?: boolean
           category?: string | null
+          is_projected?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -163,6 +165,7 @@ export interface Database {
           import_batch_id?: string | null
           is_duplicate?: boolean
           category?: string | null
+          is_projected?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -341,6 +344,32 @@ export interface Database {
           is_favorite?: boolean
           deleted_at?: string | null
           created_at?: string
+        }
+      },
+      category_budgets: {
+        Row: {
+          id: string
+          user_id: string
+          category_id: string
+          amount: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          category_id: string
+          amount: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          category_id?: string
+          amount?: number
+          created_at?: string
+          updated_at?: string
         }
       }
     }
