@@ -109,14 +109,16 @@ export function AddMovementModal({ onClose, onSuccess }: AddMovementModalProps) 
             first_payment_date: formData.first_payment_date,
             purchase_date: formData.date,
             supplier_id: formData.supplier_id || null,
+            category_id: formData.category_id || null,
             remaining_installments: installments,
-          })
+          } as any)
           .select()
           .single();
         if (cpError) throw cpError;
 
-        const { error: rpcError } = await supabase.rpc('generate_installment_transactions', {
-          p_credit_purchase_id: creditPurchase.id
+        // @ts-ignore
+        const { error: rpcError } = await supabase.rpc('generate_installment_transactions' as any, {
+          p_credit_purchase_id: (creditPurchase as any).id
         });
         if (rpcError) throw rpcError;
 
@@ -135,7 +137,7 @@ export function AddMovementModal({ onClose, onSuccess }: AddMovementModalProps) 
           category_id: formData.category_id || null,
           supplier_id: (type === 'expense' && formData.supplier_id) ? formData.supplier_id : null,
           is_recurring: false
-        });
+        } as any);
         if (txError) throw txError;
 
         toast.success(type === 'income' ? 'Ingreso registrado' : 'Gasto registrado');
@@ -170,22 +172,20 @@ export function AddMovementModal({ onClose, onSuccess }: AddMovementModalProps) 
             <button
               type="button"
               onClick={() => { setType('expense'); setIsCredit(false); }}
-              className={`flex items-center justify-center gap-2 py-2 rounded-lg font-medium transition-all ${
-                type === 'expense'
-                  ? 'bg-red-500 text-white shadow-md'
-                  : 'text-text-muted hover:text-text-main'
-              }`}
+              className={`flex items-center justify-center gap-2 py-2 rounded-lg font-medium transition-all ${type === 'expense'
+                ? 'bg-red-500 text-white shadow-md'
+                : 'text-text-muted hover:text-text-main'
+                }`}
             >
               <ArrowDownCircle className="w-4 h-4" /> Gasto
             </button>
             <button
               type="button"
               onClick={() => { setType('income'); setIsCredit(false); }}
-              className={`flex items-center justify-center gap-2 py-2 rounded-lg font-medium transition-all ${
-                type === 'income'
-                  ? 'bg-[#11d452] text-black shadow-md'
-                  : 'text-text-muted hover:text-text-main'
-              }`}
+              className={`flex items-center justify-center gap-2 py-2 rounded-lg font-medium transition-all ${type === 'income'
+                ? 'bg-[#11d452] text-black shadow-md'
+                : 'text-text-muted hover:text-text-main'
+                }`}
             >
               <ArrowUpCircle className="w-4 h-4" /> Ingreso
             </button>
@@ -346,7 +346,7 @@ export function AddMovementModal({ onClose, onSuccess }: AddMovementModalProps) 
                     onChange={(e) => setFormData({ ...formData, installments: e.target.value })}
                     className="w-full px-3 py-2 bg-background border border-border rounded-lg text-text-main text-sm"
                   >
-                    {[1, 3, 6, 9, 12, 13, 18, 24, 36, 48].map(m => (
+                    {[1, 3, 6, 9, 12, 13, 15, 18, 24, 36, 48].map(m => (
                       <option key={m} value={m}>{m} Meses</option>
                     ))}
                   </select>

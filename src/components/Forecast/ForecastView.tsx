@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Plus, Calendar, PieChart, ArrowRightLeft } from 'lucide-react';
+import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Plus, Calendar, PieChart, ArrowRightLeft, TableProperties } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, isAfter, isBefore, startOfDay } from 'date-fns';
@@ -8,6 +8,7 @@ import { AddIncomeModal } from './AddIncomeModal';
 import { SchedulePaymentModal } from './SchedulePaymentModal';
 import { BudgetLimitModal } from './BudgetLimitModal';
 import { BudgetCard } from './BudgetCard';
+import { ForecastTableView } from './ForecastTableView';
 import { FilterDropdown } from '../Transactions/FilterDropdown';
 import { Database } from '../../lib/database.types';
 import { toast } from 'sonner';
@@ -34,7 +35,7 @@ interface DayForecast {
 }
 
 type FilterType = 'all' | 'income' | 'payments';
-type ViewMode = 'calendar' | 'budgets';
+type ViewMode = 'calendar' | 'budgets' | 'projection';
 
 interface BudgetStatus {
   category_id: string;
@@ -309,11 +310,10 @@ export function ForecastView() {
                 key={dayKey}
                 onClick={() => isCurrentMonth && setSelectedDay(day)}
                 disabled={!isCurrentMonth}
-                className={`h-28 rounded-lg border transition-all relative overflow-hidden ${
-                  isSelected ? 'border-2 border-primary bg-primary/10' :
-                  isToday ? 'border border-primary/30 bg-primary/5' :
-                  'border border-border bg-surface hover:border-primary/50'
-                } ${!isCurrentMonth ? 'opacity-30' : ''}`}
+                className={`h-28 rounded-lg border transition-all relative overflow-hidden ${isSelected ? 'border-2 border-primary bg-primary/10' :
+                    isToday ? 'border border-primary/30 bg-primary/5' :
+                      'border border-border bg-surface hover:border-primary/50'
+                  } ${!isCurrentMonth ? 'opacity-30' : ''}`}
               >
                 <div className="flex flex-col h-full p-2">
                   <span className={`text-sm font-medium ${isSelected || isToday ? 'text-text-main' : 'text-text-muted'}`}>
@@ -362,9 +362,8 @@ export function ForecastView() {
         <div className="flex items-center gap-2 border-b border-border">
           <button
             onClick={() => setViewMode('calendar')}
-            className={`flex items-center gap-2 px-4 py-3 font-semibold transition relative ${
-              viewMode === 'calendar' ? 'text-primary' : 'text-text-muted'
-            }`}
+            className={`flex items-center gap-2 px-4 py-3 font-semibold transition relative ${viewMode === 'calendar' ? 'text-primary' : 'text-text-muted'
+              }`}
           >
             <Calendar className="w-4 h-4" />
             Calendario
@@ -372,13 +371,21 @@ export function ForecastView() {
           </button>
           <button
             onClick={() => setViewMode('budgets')}
-            className={`flex items-center gap-2 px-4 py-3 font-semibold transition relative ${
-              viewMode === 'budgets' ? 'text-primary' : 'text-text-muted'
-            }`}
+            className={`flex items-center gap-2 px-4 py-3 font-semibold transition relative ${viewMode === 'budgets' ? 'text-primary' : 'text-text-muted'
+              }`}
           >
             <PieChart className="w-4 h-4" />
             Presupuestos
             {viewMode === 'budgets' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />}
+          </button>
+          <button
+            onClick={() => setViewMode('projection')}
+            className={`flex items-center gap-2 px-4 py-3 font-semibold transition relative ${viewMode === 'projection' ? 'text-primary' : 'text-text-muted'
+              }`}
+          >
+            <TableProperties className="w-4 h-4" />
+            Proyección
+            {viewMode === 'projection' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />}
           </button>
         </div>
 
@@ -393,31 +400,28 @@ export function ForecastView() {
             <div className="flex gap-2">
               <button
                 onClick={() => setFilterType('all')}
-                className={`px-4 py-2 rounded-lg font-medium transition ${
-                  filterType === 'all'
+                className={`px-4 py-2 rounded-lg font-medium transition ${filterType === 'all'
                     ? 'bg-primary text-primary-fg'
                     : 'bg-surface text-text-muted hover:bg-background'
-                }`}
+                  }`}
               >
                 Todos
               </button>
               <button
                 onClick={() => setFilterType('income')}
-                className={`px-4 py-2 rounded-lg font-medium transition ${
-                  filterType === 'income'
+                className={`px-4 py-2 rounded-lg font-medium transition ${filterType === 'income'
                     ? 'bg-primary text-primary-fg'
                     : 'bg-surface text-text-muted hover:bg-background'
-                }`}
+                  }`}
               >
                 Ingresos
               </button>
               <button
                 onClick={() => setFilterType('payments')}
-                className={`px-4 py-2 rounded-lg font-medium transition ${
-                  filterType === 'payments'
+                className={`px-4 py-2 rounded-lg font-medium transition ${filterType === 'payments'
                     ? 'bg-primary text-primary-fg'
                     : 'bg-surface text-text-muted hover:bg-background'
-                }`}
+                  }`}
               >
                 Pagos
               </button>
@@ -426,7 +430,9 @@ export function ForecastView() {
         )}
       </header>
 
-      {viewMode === 'budgets' ? (
+      {viewMode === 'projection' ? (
+        <ForecastTableView />
+      ) : viewMode === 'budgets' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {loadingBudgets ? (
             <div className="col-span-full text-center text-text-muted">Cargando presupuestos...</div>

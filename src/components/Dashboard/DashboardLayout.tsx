@@ -7,6 +7,7 @@ import { Wallet, LayoutDashboard, CreditCard, TrendingUp, BarChart3, Settings, L
 
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import { QuickAddButton } from '../Transactions/QuickAddButton';
 
 interface DashboardLayoutProps {
   children?: ReactNode;
@@ -113,10 +114,15 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               >
                 <Menu className="w-6 h-6" />
               </button>
-              <div className="text-right">
-                <p className="text-xs sm:text-sm text-text-muted truncate max-w-[200px] sm:max-w-none">
-                  {user?.email}
-                </p>
+              <div className="flex items-center gap-4">
+                <div className="hidden sm:block">
+                  <QuickAddButton />
+                </div>
+                <div className="text-right">
+                  <p className="text-xs sm:text-sm text-text-muted truncate max-w-[200px] sm:max-w-none">
+                    {user?.email}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
