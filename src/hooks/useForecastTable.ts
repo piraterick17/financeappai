@@ -8,6 +8,7 @@ type Transaction = Database['public']['Tables']['transactions']['Row'];
 type FixedExpense = Database['public']['Tables']['fixed_expenses']['Row'];
 type CreditPurchase = Database['public']['Tables']['credit_purchases']['Row'];
 type Category = Database['public']['Tables']['categories']['Row'];
+type Account = Database['public']['Tables']['accounts']['Row'];
 
 export interface MonthColumn {
     key: string;        // 'yyyy-MM'
@@ -27,6 +28,7 @@ export interface ForecastRow {
     categoryName?: string; // The assigned Category logic uses this to group
     categoryId?: string | null; // The assigned Category ID
     rowType?: 'income' | 'expense';
+    accountName?: string; // The account/card name for this expense
 }
 
 export interface CategoryGroup {
@@ -79,7 +81,7 @@ async function fetchForecastTableData(
         });
     }
 
-    const [transactionsRes, fixedExpensesRes, creditPurchasesRes, categoriesRes] =
+    const [transactionsRes, fixedExpensesRes, creditPurchasesRes, categoriesRes, accountsRes] =
         await Promise.all([
             supabase
                 .from('transactions')
@@ -92,19 +94,22 @@ async function fetchForecastTableData(
                 .from('fixed_expenses')
                 .select('*')
                 .eq('user_id', userId)
-                .eq('is_active', true)
-                .neq('id', null as any),
+                .eq('is_active', true),
             supabase
                 .from('credit_purchases')
                 .select('*')
                 .eq('user_id', userId)
-                .eq('is_active', true)
-                .neq('id', null as any),
+                .eq('is_active', true),
             supabase
                 .from('categories')
                 .select('*')
                 .eq('user_id', userId)
                 .is('deleted_at', null),
+            supabase
+                .from('accounts')
+                .select('id,name')
+                .eq('user_id', userId)
+                .eq('is_active', true),
         ]);
 
     const transactions = ((transactionsRes.data || []) as Transaction[]).filter(
@@ -117,21 +122,29 @@ async function fetchForecastTableData(
         (c) => (selectedAccounts.length === 0 || selectedAccounts.includes(c.account_id)) && !!c.id
     );
     const categories = (categoriesRes.data || []) as Category[];
+    const accounts = (accountsRes.data || []) as Pick<Account, 'id' | 'name'>[];
 
     const categoryMap = new Map<string, { name: string; type: 'income' | 'expense'; color: string }>();
+    const categoryIdToNameMap = new Map<string, string>();
     categories.forEach((c) => {
         categoryMap.set(c.name, { name: c.name, type: c.type, color: c.color });
+        categoryIdToNameMap.set(c.id, c.name);
     });
 
     const categoryNameSet = new Set(categories.map(c => c.name));
+
+    // Account ID → Name map for labels
+    const accountIdToNameMap = new Map<string, string>();
+    accounts.forEach((a) => accountIdToNameMap.set(a.id, a.name));
 
     // --- Aggregate actual transactions by Category AND Normalized Description per month ---
     const transactionsByCatDescMonth = new Map<string, Map<string, Map<string, number>>>();
     const transactionTypeMap = new Map<string, 'income' | 'expense'>(); // Map Description -> Type
     const recurringDescriptions = new Set<string>();
+    const transactionAccountMap = new Map<string, string>(); // Description -> account_id
 
     transactions.forEach((t) => {
-        if ((t as any).is_transfer) return;
+        if (t.is_transfer) return;
 
         // Grouping by Category Name first (group container)
         const catName = t.category || 'Sin Categoría';
@@ -162,6 +175,7 @@ async function fetchForecastTableData(
         descMap.set(monthKey, (descMap.get(monthKey) || 0) + Math.abs(Number(t.amount)));
 
         transactionTypeMap.set(descName, t.type);
+        if (t.account_id) transactionAccountMap.set(descName, t.account_id);
     });
 
     // --- Project Fixed Expenses ---
@@ -169,11 +183,11 @@ async function fetchForecastTableData(
         const amounts: Record<string, number> = {};
 
         months.forEach((m) => {
-            const monthDate = new Date(m.key + '-01');
-            const startDate = new Date(fe.start_date);
-            const endDate = fe.end_date ? new Date(fe.end_date) : null;
+            const monthDate = startOfMonth(new Date(m.key + '-01T12:00:00'));
+            const startDate = startOfMonth(new Date(fe.start_date + 'T12:00:00'));
+            const endDate = fe.end_date ? endOfMonth(new Date(fe.end_date + 'T12:00:00')) : null;
 
-            if (monthDate >= startOfMonth(startDate) && (!endDate || monthDate <= endOfMonth(endDate))) {
+            if (monthDate >= startDate && (!endDate || monthDate <= endDate)) {
                 let actualAmount: number | undefined;
 
                 // Strategy: Look for transaction description matching FE name
@@ -191,8 +205,41 @@ async function fetchForecastTableData(
 
                 if (actualAmount !== undefined) {
                     amounts[m.key] = actualAmount;
-                } else if (!m.isPast) {
-                    amounts[m.key] = Number(fe.amount);
+                } else if (!m.isPast || m.isCurrent) {
+                    // Check Frequency logic (Using manual month indices to avoid date-fns quirks)
+                    const monthIndex = monthDate.getFullYear() * 12 + monthDate.getMonth();
+                    const startIndex = startDate.getFullYear() * 12 + startDate.getMonth();
+                    const diff = monthIndex - startIndex;
+
+                    let shouldProject = true;
+                    const frequency = fe.frequency || 'monthly';
+
+                    if (diff < 0) {
+                        shouldProject = false;
+                    } else {
+                        switch (frequency) {
+                            case 'bimonthly':
+                                shouldProject = diff % 2 === 0;
+                                break;
+                            case 'quarterly':
+                                shouldProject = diff % 3 === 0;
+                                break;
+                            case 'semiannual':
+                                shouldProject = diff % 6 === 0;
+                                break;
+                            case 'annual':
+                                shouldProject = diff % 12 === 0;
+                                break;
+                            case 'monthly':
+                            default:
+                                shouldProject = true;
+                                break;
+                        }
+                    }
+
+                    if (shouldProject) {
+                        amounts[m.key] = Number(fe.amount);
+                    }
                 }
             }
         });
@@ -203,9 +250,10 @@ async function fetchForecastTableData(
             name: fe.name,
             amounts,
             source: 'fixed_expense' as const,
-            categoryName: fe.name, // Fallback logic will assign group
+            categoryName: fe.category_id ? (categoryIdToNameMap.get(fe.category_id) || fe.name) : fe.name,
             categoryId: fe.category_id,
             rowType: 'expense' as const,
+            accountName: accountIdToNameMap.get(fe.account_id) || undefined,
         };
     });
 
@@ -250,9 +298,10 @@ async function fetchForecastTableData(
                 name: cp.description,
                 amounts,
                 source: 'credit_purchase' as const,
-                categoryName: cp.description,
+                categoryName: cp.category_id ? (categoryIdToNameMap.get(cp.category_id) || cp.description) : cp.description,
                 categoryId: cp.category_id,
                 rowType: 'expense' as const,
+                accountName: accountIdToNameMap.get(cp.account_id) || undefined,
             };
         });
 
@@ -280,6 +329,7 @@ async function fetchForecastTableData(
                 amounts[key] = val;
             });
 
+            const txAccountId = transactionAccountMap.get(descName);
             transactionRows.push({
                 id: `tx-${descName}-${catName}`,
                 originalId: descName, // Normalized Description
@@ -288,6 +338,7 @@ async function fetchForecastTableData(
                 source: 'transaction' as const,
                 categoryName: catName,
                 rowType: transactionTypeMap.get(descName) || 'expense',
+                accountName: txAccountId ? accountIdToNameMap.get(txAccountId) : undefined,
             });
         });
     });
@@ -321,15 +372,11 @@ async function fetchForecastTableData(
     };
 
     fixedExpenseRows.forEach((row) => {
-        const fe = fixedExpenses.find((f) => `fe-${f.id}` === row.id);
-        const cat = fe ? categories.find((c) => c.id === fe.category_id) : null;
-        assignToGroup(row, cat?.name || row.name);
+        assignToGroup(row, row.categoryName || 'Sin Categoría');
     });
 
     creditPurchaseRows.forEach((row) => {
-        const cp = creditPurchases.find((c) => `cp-${c.id}` === row.id);
-        const cat = cp ? categories.find((c) => c.id === cp.category_id) : null;
-        assignToGroup(row, cat?.name || row.name);
+        assignToGroup(row, row.categoryName || 'Sin Categoría');
     });
 
     transactionRows.forEach((row) => {

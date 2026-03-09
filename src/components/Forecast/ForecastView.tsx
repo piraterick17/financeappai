@@ -284,55 +284,129 @@ export function ForecastView() {
     const days = eachDayOfInterval({ start: startDate, end: endDate });
     const weekDays = ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'];
 
+    // Days with activity for mobile schedule view
+    const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
+
     return (
       <div className="space-y-2">
-        <div className="grid grid-cols-7 gap-1">
-          {weekDays.map(day => (
-            <div key={day} className="h-12 flex items-center justify-center">
-              <p className="text-xs font-bold uppercase tracking-wider text-text-muted">{day}</p>
-            </div>
-          ))}
-        </div>
-        <div className="grid grid-cols-7 gap-1">
-          {days.map(day => {
+        {/* Mobile Schedule List View */}
+        <div className="lg:hidden space-y-2">
+          {daysInMonth.map(day => {
             const dayKey = format(day, 'yyyy-MM-dd');
             const dayData = forecast.get(dayKey);
-            const isCurrentMonth = day >= monthStart && day <= monthEnd;
             const isToday = isSameDay(day, new Date());
             const isSelected = selectedDay && isSameDay(day, selectedDay);
+            const hasActivity = dayData && (dayData.totalIncome > 0 || dayData.totalExpenses > 0 || dayData.transfers.length > 0);
+            const shouldShowIndicators = dayData && getFilteredCalendarIndicators(dayData.totalIncome > 0, dayData.totalExpenses > 0);
 
-            const hasIncome = dayData && dayData.totalIncome > 0;
-            const hasExpenses = dayData && dayData.totalExpenses > 0;
-            const shouldShowIndicators = getFilteredCalendarIndicators(hasIncome, hasExpenses);
+            if (!hasActivity && !isToday) return null;
 
             return (
               <button
                 key={dayKey}
-                onClick={() => isCurrentMonth && setSelectedDay(day)}
-                disabled={!isCurrentMonth}
-                className={`h-28 rounded-lg border transition-all relative overflow-hidden ${isSelected ? 'border-2 border-primary bg-primary/10' :
-                    isToday ? 'border border-primary/30 bg-primary/5' :
-                      'border border-border bg-surface hover:border-primary/50'
-                  } ${!isCurrentMonth ? 'opacity-30' : ''}`}
+                onClick={() => setSelectedDay(day)}
+                className={`w-full flex items-start gap-3 p-3 rounded-xl border transition-all text-left active:scale-[0.98] ${isSelected
+                  ? 'border-primary bg-primary/10 shadow-sm'
+                  : isToday
+                    ? 'border-primary/30 bg-primary/5'
+                    : 'border-border bg-surface hover:border-primary/30'
+                  }`}
               >
-                <div className="flex flex-col h-full p-2">
-                  <span className={`text-sm font-medium ${isSelected || isToday ? 'text-text-main' : 'text-text-muted'}`}>
-                    {format(day, 'd')}
-                  </span>
-                  {isCurrentMonth && shouldShowIndicators && (
-                    <div className="mt-auto flex flex-col gap-1">
-                      {(filterType === 'all' || filterType === 'income') && hasIncome && (
-                        <div className="h-1.5 w-full rounded-full bg-primary/80"></div>
-                      )}
-                      {(filterType === 'all' || filterType === 'payments') && hasExpenses && (
-                        <div className="h-1.5 w-full rounded-full bg-red-500/80"></div>
-                      )}
+                <div className={`w-12 h-12 rounded-xl flex flex-col items-center justify-center shrink-0 ${isToday ? 'bg-primary text-primary-fg' : 'bg-background'}`}>
+                  <span className="text-lg font-bold leading-none">{format(day, 'd')}</span>
+                  <span className="text-[9px] font-bold uppercase">{format(day, 'EEE', { locale: es })}</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  {dayData && shouldShowIndicators && (
+                    <div className="space-y-1">
+                      {(filterType === 'all' || filterType === 'income') && dayData.income.map(t => (
+                        <div key={t.id} className="flex items-center justify-between">
+                          <span className="text-sm text-text-main truncate">{t.description}</span>
+                          <span className="text-sm font-semibold text-primary ml-2 shrink-0">+{formatCurrency(t.amount)}</span>
+                        </div>
+                      ))}
+                      {dayData.transfers.map(t => (
+                        <div key={t.id} className="flex items-center justify-between">
+                          <span className="text-sm text-text-muted truncate">{t.description}</span>
+                          <span className="text-sm font-medium text-blue-400 ml-2 shrink-0">{formatCurrency(t.amount)}</span>
+                        </div>
+                      ))}
+                      {(filterType === 'all' || filterType === 'payments') && dayData.expenses.map(t => (
+                        <div key={t.id} className="flex items-center justify-between">
+                          <span className="text-sm text-text-main truncate">{t.description}</span>
+                          <span className="text-sm font-semibold text-red-500 ml-2 shrink-0">-{formatCurrency(t.amount)}</span>
+                        </div>
+                      ))}
                     </div>
+                  )}
+                  {(!hasActivity && isToday) && (
+                    <p className="text-xs text-text-muted italic">Hoy — sin movimientos</p>
                   )}
                 </div>
               </button>
             );
           })}
+          {daysInMonth.every(day => {
+            const dayKey = format(day, 'yyyy-MM-dd');
+            const dayData = forecast.get(dayKey);
+            return !(dayData && (dayData.totalIncome > 0 || dayData.totalExpenses > 0 || dayData.transfers.length > 0)) && !isSameDay(day, new Date());
+          }) && (
+              <div className="text-center py-8 text-text-muted text-sm">
+                No hay movimientos programados para este mes
+              </div>
+            )}
+        </div>
+
+        {/* Desktop Calendar Grid */}
+        <div className="hidden lg:block">
+          <div className="grid grid-cols-7 gap-1">
+            {weekDays.map(day => (
+              <div key={day} className="h-12 flex items-center justify-center">
+                <p className="text-xs font-bold uppercase tracking-wider text-text-muted">{day}</p>
+              </div>
+            ))}
+          </div>
+          <div className="grid grid-cols-7 gap-1">
+            {days.map(day => {
+              const dayKey = format(day, 'yyyy-MM-dd');
+              const dayData = forecast.get(dayKey);
+              const isCurrentMonth = day >= monthStart && day <= monthEnd;
+              const isToday = isSameDay(day, new Date());
+              const isSelected = selectedDay && isSameDay(day, selectedDay);
+
+              const hasIncome = dayData && dayData.totalIncome > 0;
+              const hasExpenses = dayData && dayData.totalExpenses > 0;
+              const shouldShowIndicators = getFilteredCalendarIndicators(hasIncome, hasExpenses);
+
+              return (
+                <button
+                  key={dayKey}
+                  onClick={() => isCurrentMonth && setSelectedDay(day)}
+                  disabled={!isCurrentMonth}
+                  className={`h-28 rounded-lg border transition-all relative overflow-hidden ${isSelected ? 'border-2 border-primary bg-primary/10' :
+                    isToday ? 'border border-primary/30 bg-primary/5' :
+                      'border border-border bg-surface hover:border-primary/50'
+                    } ${!isCurrentMonth ? 'opacity-30' : ''}`}
+                >
+                  <div className="flex flex-col h-full p-2">
+                    <span className={`text-sm font-medium ${isSelected || isToday ? 'text-text-main' : 'text-text-muted'}`}>
+                      {format(day, 'd')}
+                    </span>
+                    {isCurrentMonth && shouldShowIndicators && (
+                      <div className="mt-auto flex flex-col gap-1">
+                        {(filterType === 'all' || filterType === 'income') && hasIncome && (
+                          <div className="h-1.5 w-full rounded-full bg-primary/80"></div>
+                        )}
+                        {(filterType === 'all' || filterType === 'payments') && hasExpenses && (
+                          <div className="h-1.5 w-full rounded-full bg-red-500/80"></div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
     );
@@ -401,8 +475,8 @@ export function ForecastView() {
               <button
                 onClick={() => setFilterType('all')}
                 className={`px-4 py-2 rounded-lg font-medium transition ${filterType === 'all'
-                    ? 'bg-primary text-primary-fg'
-                    : 'bg-surface text-text-muted hover:bg-background'
+                  ? 'bg-primary text-primary-fg'
+                  : 'bg-surface text-text-muted hover:bg-background'
                   }`}
               >
                 Todos
@@ -410,8 +484,8 @@ export function ForecastView() {
               <button
                 onClick={() => setFilterType('income')}
                 className={`px-4 py-2 rounded-lg font-medium transition ${filterType === 'income'
-                    ? 'bg-primary text-primary-fg'
-                    : 'bg-surface text-text-muted hover:bg-background'
+                  ? 'bg-primary text-primary-fg'
+                  : 'bg-surface text-text-muted hover:bg-background'
                   }`}
               >
                 Ingresos
@@ -419,8 +493,8 @@ export function ForecastView() {
               <button
                 onClick={() => setFilterType('payments')}
                 className={`px-4 py-2 rounded-lg font-medium transition ${filterType === 'payments'
-                    ? 'bg-primary text-primary-fg'
-                    : 'bg-surface text-text-muted hover:bg-background'
+                  ? 'bg-primary text-primary-fg'
+                  : 'bg-surface text-text-muted hover:bg-background'
                   }`}
               >
                 Pagos
@@ -437,8 +511,10 @@ export function ForecastView() {
           {loadingBudgets ? (
             <div className="col-span-full text-center text-text-muted">Cargando presupuestos...</div>
           ) : budgetStatuses.length === 0 ? (
-            <div className="col-span-full text-center">
-              <p className="text-text-muted mb-4">No hay presupuestos definidos.</p>
+            <div className="col-span-full text-center py-8">
+              <PieChart className="w-12 h-12 text-text-muted/40 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-text-main mb-2">Sin presupuestos definidos</h3>
+              <p className="text-text-muted text-sm mb-6 max-w-sm mx-auto">Crea presupuestos por categoría para controlar tus gastos mensuales y recibir alertas.</p>
               <button
                 onClick={() => setShowBudgetModal(true)}
                 className="px-6 py-3 bg-primary text-primary-fg rounded-lg font-semibold hover:opacity-90 transition"

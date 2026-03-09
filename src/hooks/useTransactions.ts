@@ -25,12 +25,6 @@ export interface TransactionFilters {
 
 export interface TransactionWithAccount extends Transaction {
   accounts: { name: string; type: string } | null;
-  is_transfer?: boolean;
-  // is_projected is now part of Transaction, so we don't need to redefine it or it should match.
-  // If it's optional in Transaction (from DB types) it might be boolean | undefined?
-  // Let's check DB types again. DB says `is_projected: boolean`.
-  // So we don't need to add it here if it's already in Transaction.
-  // However, TS complains about incompatibility. Let's remove it if it's already inherited.
 }
 
 export interface TransactionsResponse {
@@ -79,8 +73,8 @@ async function fetchTransactions(filters: TransactionFilters): Promise<Transacti
   }
 
   if (filters.categories && filters.categories.length > 0) {
-    countQuery = countQuery.in('category', filters.categories);
-    dataQuery = dataQuery.in('category', filters.categories);
+    countQuery = countQuery.in('category_id', filters.categories);
+    dataQuery = dataQuery.in('category_id', filters.categories);
   }
 
   if (filters.supplierId) {
@@ -92,19 +86,6 @@ async function fetchTransactions(filters: TransactionFilters): Promise<Transacti
     const trimmedSearch = filters.searchTerm.trim();
     countQuery = countQuery.ilike('description', `%${trimmedSearch}%`);
     dataQuery = dataQuery.ilike('description', `%${trimmedSearch}%`);
-  }
-
-  if (filters.includeProjected === false) {
-    countQuery = countQuery.eq('is_projected', false);
-    dataQuery = dataQuery.eq('is_projected', false);
-  } else if (filters.includeProjected === true) {
-    // If explicitly true (and we want ONLY projected), we might need a different flag or assume "includeProjected" means "show all" usually.
-    // But looking at the requirement "Pendientes", we need checks for is_projected = true.
-    // Let's change the interpretation of the filter or add a specific one.
-    // The previous code only handled `=== false`.
-    // Let's just follow the existing pattern: if it's undefined, we might show all?
-    // Actually, `RecentTransactionsList` passes `false`.
-    // Let's add support for `onlyProjected` in the interface and logic.
   }
 
   if (filters.onlyProjected) {
@@ -165,16 +146,24 @@ export function useDeleteTransaction() {
 
   return useMutation({
     mutationFn: async (transactionId: string) => {
+      console.log('[DELETE] Deleting transaction:', transactionId);
       const { error } = await supabase
         .from('transactions')
-        // @ts-ignore
-        .update({ deleted_at: new Date().toISOString() })
+        .delete()
         .eq('id', transactionId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('[DELETE] Supabase error:', error);
+        throw error;
+      }
+
+      console.log('[DELETE] Success!');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
+    },
+    onError: (error) => {
+      console.error('[DELETE] Mutation error:', error);
     },
   });
 }
@@ -186,8 +175,7 @@ export function useCreateTransaction() {
     mutationFn: async (transaction: Omit<Transaction, 'id' | 'created_at' | 'updated_at' | 'deleted_at'>) => {
       const { data, error } = await supabase
         .from('transactions')
-        // @ts-ignore
-        .insert(transaction)
+        .insert(transaction as any)
         .select()
         .single();
 
@@ -207,8 +195,7 @@ export function useUpdateTransaction() {
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<Transaction> }) => {
       const { data, error } = await supabase
         .from('transactions')
-        // @ts-ignore
-        .update(updates)
+        .update(updates as any)
         .eq('id', id)
         .select()
         .single();

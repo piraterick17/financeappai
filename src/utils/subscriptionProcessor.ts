@@ -4,6 +4,54 @@ import { Database } from '../lib/database.types';
 type FixedExpense = Database['public']['Tables']['fixed_expenses']['Row'];
 type Transaction = Database['public']['Tables']['transactions']['Row'];
 
+/**
+ * Determines if a subscription should generate a transaction this month
+ * based on its frequency (monthly, annual, biweekly, etc.)
+ */
+function shouldGenerateThisMonth(sub: FixedExpense, currentYear: number, currentMonth: number): boolean {
+    const frequency = (sub.frequency || 'monthly').toLowerCase();
+    const startDate = new Date(sub.start_date + 'T12:00:00');
+    const startYear = startDate.getFullYear();
+    const startMonth = startDate.getMonth(); // 0-indexed
+
+    switch (frequency) {
+        case 'monthly':
+            return true;
+
+        case 'annual':
+        case 'yearly':
+            // Only generate in the same month as start_date
+            return currentMonth === startMonth;
+
+        case 'biweekly':
+        case 'quincenal':
+            // Biweekly: always generate (twice per month on due_day and due_day+15)
+            return true;
+
+        case 'quarterly':
+        case 'trimestral':
+            // Every 3 months from start
+            const monthsSinceStartQ = (currentYear - startYear) * 12 + (currentMonth - startMonth);
+            return monthsSinceStartQ >= 0 && monthsSinceStartQ % 3 === 0;
+
+        case 'bimonthly':
+        case 'bimestral':
+            // Every 2 months from start
+            const monthsSinceStartB = (currentYear - startYear) * 12 + (currentMonth - startMonth);
+            return monthsSinceStartB >= 0 && monthsSinceStartB % 2 === 0;
+
+        case 'semiannual':
+        case 'semestral':
+            // Every 6 months from start
+            const monthsSinceStartS = (currentYear - startYear) * 12 + (currentMonth - startMonth);
+            return monthsSinceStartS >= 0 && monthsSinceStartS % 6 === 0;
+
+        default:
+            // Unknown frequency — default to monthly
+            return true;
+    }
+}
+
 export async function processSubscriptions(userId: string) {
     try {
         const today = new Date();
@@ -22,7 +70,7 @@ export async function processSubscriptions(userId: string) {
 
         const subscriptions = subscriptionsData as FixedExpense[];
 
-        // 2. Get all transactions for the current month
+        // 2. Get all transactions for the current month (excluding soft-deleted)
         const startOfMonth = new Date(currentYear, currentMonth, 1).toISOString();
         const endOfMonth = new Date(currentYear, currentMonth + 1, 0).toISOString();
 
@@ -30,6 +78,7 @@ export async function processSubscriptions(userId: string) {
             .from('transactions')
             .select('*')
             .eq('user_id', userId)
+            .is('deleted_at', null)
             .gte('transaction_date', startOfMonth)
             .lte('transaction_date', endOfMonth);
 
@@ -40,7 +89,11 @@ export async function processSubscriptions(userId: string) {
 
         // 3. Check which subscriptions need a transaction generated
         for (const sub of subscriptions) {
-            // Logic to determine date for this month
+            // Check if this subscription should fire this month based on frequency
+            if (!shouldGenerateThisMonth(sub, currentYear, currentMonth)) {
+                continue;
+            }
+
             // Handle due_day > days in month (e.g. 31st in Feb)
             const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
             const day = Math.min(sub.due_day, daysInMonth);
@@ -50,13 +103,9 @@ export async function processSubscriptions(userId: string) {
 
             // Check for duplicates (Fuzzy match)
             const isDuplicate = existingTransactions.some(t => {
-                // Match by exact name or description containing name
                 const nameMatch = t.description.toLowerCase().includes(sub.name.toLowerCase()) ||
                     sub.name.toLowerCase().includes(t.description.toLowerCase());
-
-                // Match by amount (within small margin or exact)
                 const amountMatch = Math.abs(Math.abs(t.amount) - Math.abs(sub.amount)) < 1;
-
                 return nameMatch && amountMatch;
             });
 
@@ -66,28 +115,20 @@ export async function processSubscriptions(userId: string) {
                     account_id: sub.account_id,
                     category_id: sub.category_id,
                     description: sub.name,
-                    amount: -Math.abs(sub.amount), // Expenses are negative
+                    amount: -Math.abs(sub.amount),
                     type: 'expense',
                     transaction_date: formattedDate,
                     is_recurring: true,
-                    recurrence_period: 'monthly',
-                    is_projected: targetDate > today, // Projected if in the future
-                    category: null // Categories usually joined, but we can try to set if we fetched it? 
-                    // Actually category_id is enough for the DB, but UI might want category name. 
-                    // The table definition has 'category' string field too? 
-                    // Yes, 'category' column exists in transactions.
+                    recurrence_period: sub.frequency || 'monthly',
+                    is_projected: targetDate > today,
+                    category: null,
                 });
             }
         }
 
         // 4. Batch insert new transactions
         if (transactionsToCreate.length > 0) {
-            // Need to fetch category names for the text field if possible, 
-            // but for now we'll leave 'category' null or let a trigger handle it if one exists.
-            // Based on schema, 'category' is a string column. 
-            // Ideally we would look up the category name from category_id.
-
-            // Let's do a quick lookup if we have categories to create
+            // Look up category names
             if (transactionsToCreate.some(t => t.category_id)) {
                 const { data: categories } = await supabase
                     .from('categories')

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Wallet, TrendingUp, TrendingDown, CreditCard } from 'lucide-react';
+import { Wallet, TrendingUp, CreditCard, Clock } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { FinancialTrendChart } from './FinancialTrendChart';
@@ -11,7 +11,7 @@ import {
   MonthlyData,
 } from '../../utils/financialDataProcessing';
 
-import { processSubscriptions } from '../../utils/subscriptionProcessor';
+
 
 type Account = Database['public']['Tables']['accounts']['Row'];
 
@@ -46,10 +46,7 @@ export function DashboardOverview() {
   useEffect(() => {
     if (user) {
       checkAndRealizePendingTransactions();
-      processSubscriptions(user.id).then(() => {
-        // Reload summary after processing subscriptions to reflect changes
-        loadSummary();
-      });
+      loadSummary();
     }
   }, [user]);
 
@@ -61,8 +58,9 @@ export function DashboardOverview() {
         'check_and_realize_projected_transactions'
       );
 
-      if (rpcResult?.realized_count > 0) {
-        console.log(`${rpcResult.realized_count} cuotas aplicadas automáticamente`);
+      const result = rpcResult as { realized_count: number } | null;
+      if (result && result.realized_count > 0) {
+        console.log(`${result.realized_count} cuotas aplicadas automáticamente`);
       }
     } catch (error) {
       console.error('Error al verificar cuotas proyectadas:', error);
@@ -81,9 +79,8 @@ export function DashboardOverview() {
 
     const { start: sixMonthsStart, end: sixMonthsEnd } = getLast6MonthsRange();
 
-    const [fullAccountsRes, currentMonthTransactionsRes, projectedMonthTransactionsRes, sixMonthsTransactionsRes] = await Promise.all([
+    const [fullAccountsRes, confirmedMonthTransactionsRes, projectedMonthTransactionsRes, sixMonthsTransactionsRes] = await Promise.all([
       supabase.from('accounts').select('*').eq('user_id', user.id).eq('is_active', true),
-      supabase.from('accounts').select('balance, is_active, type').eq('user_id', user.id),
       supabase
         .from('transactions')
         .select('type, amount, is_transfer')
@@ -104,7 +101,6 @@ export function DashboardOverview() {
         .from('transactions')
         .select('type, amount, transaction_date, is_transfer')
         .eq('user_id', user.id)
-        .eq('is_projected', false)
         .is('deleted_at', null)
         .gte('transaction_date', sixMonthsStart)
         .lte('transaction_date', sixMonthsEnd)
@@ -115,41 +111,44 @@ export function DashboardOverview() {
       setAccounts(fullAccountsRes.data);
     }
 
-    const accountsRes = fullAccountsRes;
+    const allAccountsData = (fullAccountsRes.data || []) as Account[];
 
-    const totalLiquidity = accountsRes.data
-      ?.filter((acc) => acc.type !== 'credit')
+    const totalLiquidity = allAccountsData
+      .filter((acc) => acc.type !== 'credit')
       .reduce((sum, acc) => sum + Number(acc.balance), 0) || 0;
 
     const totalDebt = Math.abs(
-      accountsRes.data
-        ?.filter((acc) => acc.type === 'credit')
-        .reduce((sum, acc) => sum + Number((acc as any).balance || 0), 0) || 0
+      allAccountsData
+        .filter((acc) => acc.type === 'credit')
+        .reduce((sum, acc) => sum + Number(acc.balance || 0), 0) || 0
     );
 
     const netWorth = totalLiquidity - totalDebt;
-    const totalBalance = accountsRes.data?.reduce((sum, acc) => sum + Number(acc.balance), 0) || 0;
-    const activeAccounts = accountsRes.data?.filter((acc) => acc.is_active).length || 0;
+    const totalBalance = allAccountsData.reduce((sum, acc) => sum + Number(acc.balance), 0) || 0;
+    const activeAccounts = allAccountsData.filter((acc) => acc.is_active).length || 0;
+
+    const confirmedTxData = (confirmedMonthTransactionsRes.data || []) as { type: string; amount: number; is_transfer?: boolean }[];
+    const projectedTxData = (projectedMonthTransactionsRes.data || []) as { type: string; amount: number; is_transfer?: boolean }[];
 
     const monthlyIncome =
-      currentMonthTransactionsRes.data
-        ?.filter((t) => t.type === 'income' && !t.is_transfer && !t.is_projected)
-        .reduce((sum, t) => sum + Number(t.amount), 0) || 0;
+      confirmedTxData
+        .filter((t) => t.type === 'income' && !t.is_transfer)
+        .reduce((sum: number, t) => sum + Number(t.amount), 0) || 0;
 
     const monthlyExpenses =
-      currentMonthTransactionsRes.data
-        ?.filter((t) => t.type === 'expense' && !t.is_transfer && !t.is_projected)
-        .reduce((sum, t) => sum + Number(t.amount), 0) || 0;
+      confirmedTxData
+        .filter((t) => t.type === 'expense' && !t.is_transfer)
+        .reduce((sum: number, t) => sum + Number(t.amount), 0) || 0;
 
     const projectedIncome =
-      projectedMonthTransactionsRes.data
-        ?.filter((t) => t.type === 'income' && !t.is_transfer)
-        .reduce((sum, t) => sum + Number(t.amount), 0) || 0;
+      projectedTxData
+        .filter((t) => t.type === 'income' && !t.is_transfer)
+        .reduce((sum: number, t) => sum + Number(t.amount), 0) || 0;
 
     const projectedExpenses =
-      projectedMonthTransactionsRes.data
-        ?.filter((t) => t.type === 'expense' && !t.is_transfer)
-        .reduce((sum, t) => sum + Number(t.amount), 0) || 0;
+      projectedTxData
+        .filter((t) => t.type === 'expense' && !t.is_transfer)
+        .reduce((sum: number, t) => sum + Number(t.amount), 0) || 0;
 
     const projectedEndOfMonthBalance = totalLiquidity + projectedIncome + projectedExpenses;
 
@@ -311,7 +310,7 @@ export function DashboardOverview() {
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-2">
                 <span className="text-xs sm:text-sm text-text-muted/80">Proyectado al cierre</span>
-                <span className="text-xs text-text-muted/60" title="Incluye pagos e ingresos pendientes del mes">⏱️</span>
+                <Clock className="w-3 h-3 text-text-muted/60" />
               </div>
               <span
                 className={`text-xs sm:text-sm font-semibold ${summary.projectedEndOfMonthBalance >= 0

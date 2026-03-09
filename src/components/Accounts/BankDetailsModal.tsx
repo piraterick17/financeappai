@@ -47,40 +47,40 @@ export function BankDetailsModal({
 
   return (
     <div
-      className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+      className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4 z-50"
       onClick={onClose}
     >
       <div
-        className="bg-[#112217] rounded-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto border border-gray-800"
+        className="bg-surface w-full h-full sm:h-auto sm:rounded-2xl sm:max-w-5xl sm:max-h-[90vh] overflow-y-auto sm:border sm:border-border"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 bg-[#112217] border-b border-gray-800 p-6 flex justify-between items-center z-10">
+        <div className="sticky top-0 bg-surface border-b border-border p-6 flex justify-between items-center z-10">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-[#11d452] rounded-xl flex items-center justify-center flex-shrink-0">
-              <span className="text-2xl font-bold text-[#102216]">
+            <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center flex-shrink-0">
+              <span className="text-2xl font-bold text-primary-fg">
                 {bank.bankInitial}
               </span>
             </div>
             <div>
-              <h3 className="text-white text-xl font-bold">{bank.bankName}</h3>
-              <p className="text-sm text-gray-400">
+              <h3 className="text-text-main text-xl font-bold">{bank.bankName}</h3>
+              <p className="text-sm text-text-muted">
                 {bank.accounts.length} cuenta{bank.accounts.length !== 1 ? 's' : ''}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-4">
             <div className="text-right">
-              <p className="text-xs text-gray-400">Saldo Consolidado</p>
-              <p className="text-2xl font-bold text-white">
+              <p className="text-xs text-text-muted">Saldo Consolidado</p>
+              <p className="text-2xl font-bold text-text-main">
                 {formatCurrency(bank.totalBalance)}
               </p>
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-white/10 rounded-lg transition flex-shrink-0"
+              className="p-2 hover:bg-background rounded-lg transition flex-shrink-0"
               aria-label="Cerrar modal"
             >
-              <X className="w-6 h-6 text-gray-400" />
+              <X className="w-6 h-6 text-text-muted" />
             </button>
           </div>
         </div>
@@ -92,10 +92,10 @@ export function BankDetailsModal({
               return (
                 <div
                   key={account.id}
-                  className="bg-gray-800/50 p-5 rounded-lg shadow-lg border border-gray-700/50 hover:border-gray-600 transition relative"
+                  className="bg-background p-5 rounded-lg shadow-lg border border-border hover:border-primary/30 transition relative"
                 >
                   <div className="flex justify-between items-start mb-3">
-                    <p className="text-sm font-medium text-gray-400">
+                    <p className="text-sm font-medium text-text-muted">
                       {getAccountTypeLabel(account.type)}
                     </p>
                     <div className="relative">
@@ -104,10 +104,10 @@ export function BankDetailsModal({
                           e.stopPropagation();
                           setMenuOpen(isMenuOpen ? null : account.id);
                         }}
-                        className="p-1 hover:bg-gray-700 rounded transition"
+                        className="p-1 hover:bg-surface rounded transition"
                       >
                         <svg
-                          className="w-4 h-4 text-gray-400"
+                          className="w-4 h-4 text-text-muted"
                           fill="currentColor"
                           viewBox="0 0 20 20"
                         >
@@ -120,14 +120,14 @@ export function BankDetailsModal({
                             className="fixed inset-0 z-30"
                             onClick={() => setMenuOpen(null)}
                           ></div>
-                          <div className="absolute right-0 mt-2 w-48 bg-gray-700 rounded-lg shadow-xl border border-gray-600 py-2 z-40">
+                          <div className="absolute right-0 mt-2 w-48 bg-surface rounded-lg shadow-xl border border-border py-2 z-40">
                             {onViewDetails && (
                               <button
                                 onClick={() => {
                                   onViewDetails(account.id);
                                   setMenuOpen(null);
                                 }}
-                                className="w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-600 flex items-center gap-2"
+                                className="w-full px-4 py-2 text-left text-sm text-text-main hover:bg-background flex items-center gap-2"
                               >
                                 <Eye className="w-4 h-4" />
                                 Ver Detalles
@@ -138,7 +138,7 @@ export function BankDetailsModal({
                                 onEdit(account);
                                 setMenuOpen(null);
                               }}
-                              className="w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-600 flex items-center gap-2"
+                              className="w-full px-4 py-2 text-left text-sm text-text-main hover:bg-background flex items-center gap-2"
                             >
                               <Pencil className="w-4 h-4" />
                               Editar
@@ -148,7 +148,7 @@ export function BankDetailsModal({
                                 onDelete(account.id);
                                 setMenuOpen(null);
                               }}
-                              className="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-gray-600 flex items-center gap-2"
+                              className="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-background flex items-center gap-2"
                             >
                               <Trash2 className="w-4 h-4" />
                               Eliminar
@@ -158,15 +158,24 @@ export function BankDetailsModal({
                       )}
                     </div>
                   </div>
-                  <p className="text-xl font-bold text-white mt-2">
-                    {formatCurrency(Number(account.balance))}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-3">
+                  {account.type === 'credit' ? (
+                    <>
+                      <p className="text-xs text-red-400 uppercase font-semibold mt-1">Deuda actual</p>
+                      <p className="text-xl font-bold text-red-400 mt-1">
+                        {formatCurrency(Number(account.balance))}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-xl font-bold text-text-main mt-2">
+                      {formatCurrency(Number(account.balance))}
+                    </p>
+                  )}
+                  <p className="text-xs text-text-muted mt-3">
                     **** {account.name.slice(-4).padStart(4, '0')}
                   </p>
                   {account.type === 'credit' && account.credit_limit && (
                     <div className="mt-3 pt-3 border-t border-gray-700/50">
-                      <p className="text-xs text-gray-400">
+                      <p className="text-xs text-text-muted">
                         Límite: {formatCurrency(Number(account.credit_limit))}
                       </p>
                       {account.amount_due && Number(account.amount_due) > 0 && (

@@ -1,6 +1,6 @@
 import { ReactNode, useState } from 'react';
 import { NavLink, useLocation, Outlet } from 'react-router-dom';
-import { Wallet, LayoutDashboard, CreditCard, TrendingUp, BarChart3, Settings, LogOut, Menu, X, Moon, Sun, CalendarRange } from 'lucide-react';
+import { Wallet, LayoutDashboard, CreditCard, TrendingUp, BarChart3, Settings, LogOut, Menu, X, Moon, Sun, CalendarRange, PlusCircle } from 'lucide-react';
 
 // ...
 
@@ -8,6 +8,8 @@ import { Wallet, LayoutDashboard, CreditCard, TrendingUp, BarChart3, Settings, L
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { QuickAddButton } from '../Transactions/QuickAddButton';
+import { AddMovementModal } from '../Transactions/AddMovementModal';
+import { AICopilotPanel } from '../AICopilot/AICopilotPanel';
 
 interface DashboardLayoutProps {
   children?: ReactNode;
@@ -17,6 +19,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const { signOut, user } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [fabModalOpen, setFabModalOpen] = useState(false);
   const location = useLocation();
 
   const navItems = [
@@ -24,7 +27,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     { path: '/accounts', label: 'Cuentas', icon: CreditCard },
     { path: '/transactions', label: 'Transacciones', icon: TrendingUp },
     { path: '/subscriptions', label: 'Suscripciones', icon: CalendarRange },
-    { path: '/forecast', label: 'Presupuestos', icon: BarChart3 },
+    { path: '/forecast', label: 'Forecast', icon: BarChart3 },
     { path: '/administration', label: 'Administración', icon: Settings },
   ];
 
@@ -127,11 +130,72 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             </div>
           </div>
 
-          <main className="min-h-screen">
+          <main className="min-h-screen pb-24 lg:pb-0">
             {children || <Outlet />}
           </main>
+
+          {/* Mobile FAB - Nuevo Movimiento */}
+          <button
+            onClick={() => setFabModalOpen(true)}
+            className="lg:hidden fixed bottom-[5.5rem] right-5 z-50 w-14 h-14 bg-primary text-primary-fg rounded-full shadow-xl shadow-primary/30 flex items-center justify-center active:scale-95 transition-transform"
+            aria-label="Nuevo Movimiento"
+          >
+            <PlusCircle className="w-7 h-7" />
+          </button>
+          {fabModalOpen && (
+            <AddMovementModal onClose={() => setFabModalOpen(false)} />
+          )}
+
+          {/* Mobile Bottom Navigation */}
+          <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-surface border-t border-border safe-area-bottom">
+            <div className="flex items-center justify-around h-16">
+              {[
+                { path: '/', label: 'Resumen', icon: LayoutDashboard },
+                { path: '/accounts', label: 'Cuentas', icon: CreditCard },
+                { path: '/transactions', label: 'Movimientos', icon: TrendingUp },
+                { path: '/forecast', label: 'Forecast', icon: BarChart3 },
+                { path: '#more', label: 'Más', icon: Menu },
+              ].map((item) => {
+                const Icon = item.icon;
+                if (item.path === '#more') {
+                  return (
+                    <button
+                      key="more"
+                      onClick={() => setSidebarOpen(true)}
+                      className="flex flex-col items-center justify-center gap-0.5 px-2 py-1 text-text-muted active:text-primary transition-colors min-w-[4rem]"
+                    >
+                      <Icon className="w-5 h-5" />
+                      <span className="text-[10px] font-medium">{item.label}</span>
+                    </button>
+                  );
+                }
+                const isActive = item.path === '/'
+                  ? location.pathname === '/'
+                  : location.pathname.startsWith(item.path);
+                return (
+                  <NavLink
+                    key={item.path}
+                    to={item.path}
+                    className={`flex flex-col items-center justify-center gap-0.5 px-2 py-1 transition-colors min-w-[4rem] ${isActive
+                      ? 'text-primary'
+                      : 'text-text-muted active:text-primary'
+                      }`}
+                    end={item.path === '/'}
+                  >
+                    <div className={`p-1 rounded-xl transition ${isActive ? 'bg-primary/15' : ''}`}>
+                      <Icon className="w-5 h-5" />
+                    </div>
+                    <span className={`text-[10px] ${isActive ? 'font-bold' : 'font-medium'}`}>{item.label}</span>
+                  </NavLink>
+                );
+              })}
+            </div>
+          </nav>
         </div>
       </div>
+
+      {/* AI Copilot - available on all pages */}
+      <AICopilotPanel />
     </div>
   );
 }

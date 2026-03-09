@@ -158,8 +158,140 @@ export function ForecastTableView() {
                 </div>
             </div>
 
-            {/* Table container */}
-            <div className="bg-surface border border-border rounded-2xl overflow-hidden shadow-sm">
+            {/* Mobile Card View */}
+            <div className="lg:hidden space-y-3">
+                {groups.map((group) => {
+                    const isCollapsed = collapsedGroups.has(group.name);
+                    const CollapseIcon = isCollapsed ? ChevronRight : ChevronDown;
+                    const groupTotal = months.reduce((sum, m) =>
+                        sum + group.rows.reduce((s, r) => s + (r.amounts[m.key] || 0), 0), 0
+                    );
+
+                    return (
+                        <div key={group.name} className="bg-surface border border-border rounded-xl overflow-hidden">
+                            <button
+                                onClick={() => toggleGroup(group.name)}
+                                className="w-full flex items-center justify-between px-4 py-3 active:bg-background transition"
+                            >
+                                <div className="flex items-center gap-2">
+                                    <CollapseIcon className="w-4 h-4 text-text-muted" />
+                                    <span
+                                        className="text-xs font-extrabold uppercase tracking-wider"
+                                        style={{ color: group.color }}
+                                    >
+                                        {group.name}
+                                    </span>
+                                    <span className="text-[10px] text-text-muted">({group.rows.length})</span>
+                                </div>
+                                <span className="text-sm font-bold text-text-main tabular-nums">
+                                    {formatCurrency(groupTotal / months.length)}/mes
+                                </span>
+                            </button>
+
+                            {!isCollapsed && (
+                                <div className="border-t border-border divide-y divide-border/50">
+                                    {group.rows.map((row) => {
+                                        const Icon = getIconForCategory(row.name);
+                                        return (
+                                            <div
+                                                key={row.id}
+                                                className="px-4 py-3 active:bg-background/50 cursor-pointer"
+                                                onClick={() => handleRowClick(row, group)}
+                                            >
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <div className="flex items-center gap-2 min-w-0">
+                                                        <div
+                                                            className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+                                                            style={{ backgroundColor: group.color + '18' }}
+                                                        >
+                                                            <Icon className="w-3.5 h-3.5" style={{ color: group.color }} />
+                                                        </div>
+                                                        <span className="text-sm text-text-main font-medium truncate">{row.name}</span>
+                                                    </div>
+                                                    <Pencil className="w-3 h-3 text-text-muted shrink-0 ml-2" />
+                                                </div>
+                                                <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+                                                    {months.map((m) => {
+                                                        const amount = row.amounts[m.key];
+                                                        return (
+                                                            <div
+                                                                key={m.key}
+                                                                className={`flex flex-col items-center px-2 py-1.5 rounded-lg min-w-[4rem] shrink-0 ${m.isCurrent ? 'bg-primary/10' : 'bg-background/50'
+                                                                    }`}
+                                                            >
+                                                                <span className={`text-[9px] font-bold uppercase ${m.isCurrent ? 'text-primary' : 'text-text-muted'}`}>
+                                                                    {m.label.slice(0, 3)}
+                                                                </span>
+                                                                <span className="text-xs font-medium text-text-main tabular-nums mt-0.5">
+                                                                    {amount !== undefined ? formatCurrency(amount) : '—'}
+                                                                </span>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    );
+                })}
+
+                {/* Mobile Totals */}
+                <div className="grid grid-cols-1 gap-3">
+                    {Object.values(monthlyIncome).some((v) => v > 0) && (
+                        <div className="bg-primary/10 border border-primary/20 rounded-xl p-4">
+                            <div className="flex items-center gap-2 mb-3">
+                                <TrendingUp className="w-5 h-5 text-primary" />
+                                <span className="text-sm font-bold text-primary">Total Ingresos</span>
+                            </div>
+                            <div className="flex gap-2 overflow-x-auto pb-1">
+                                {months.map((m) => (
+                                    <div key={m.key} className={`flex flex-col items-center px-2 py-1.5 rounded-lg min-w-[4rem] shrink-0 ${m.isCurrent ? 'bg-primary/20' : 'bg-primary/5'}`}>
+                                        <span className={`text-[9px] font-bold uppercase ${m.isCurrent ? 'text-primary' : 'text-text-muted'}`}>{m.label.slice(0, 3)}</span>
+                                        <span className="text-xs font-bold text-primary tabular-nums mt-0.5">{formatCurrency(monthlyIncome[m.key] || 0)}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                    <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4">
+                        <div className="flex items-center gap-2 mb-3">
+                            <TrendingDown className="w-5 h-5 text-red-500" />
+                            <span className="text-sm font-bold text-red-500">Total Gastos</span>
+                        </div>
+                        <div className="flex gap-2 overflow-x-auto pb-1">
+                            {months.map((m) => (
+                                <div key={m.key} className={`flex flex-col items-center px-2 py-1.5 rounded-lg min-w-[4rem] shrink-0 ${m.isCurrent ? 'bg-red-500/20' : 'bg-red-500/5'}`}>
+                                    <span className={`text-[9px] font-bold uppercase ${m.isCurrent ? 'text-red-500' : 'text-text-muted'}`}>{m.label.slice(0, 3)}</span>
+                                    <span className="text-xs font-bold text-red-500 tabular-nums mt-0.5">{formatCurrency(monthlyTotals[m.key] || 0)}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    <div className="bg-primary/15 border border-primary/30 rounded-xl p-4">
+                        <div className="flex items-center gap-2 mb-3">
+                            <DollarSign className="w-5 h-5 text-primary" />
+                            <span className="text-sm font-extrabold text-primary">Balance Neto</span>
+                        </div>
+                        <div className="flex gap-2 overflow-x-auto pb-1">
+                            {months.map((m) => {
+                                const net = (monthlyIncome[m.key] || 0) - (monthlyTotals[m.key] || 0);
+                                return (
+                                    <div key={m.key} className={`flex flex-col items-center px-2 py-1.5 rounded-lg min-w-[4rem] shrink-0 ${m.isCurrent ? 'bg-primary/25' : 'bg-primary/5'}`}>
+                                        <span className={`text-[9px] font-bold uppercase ${m.isCurrent ? 'text-primary' : 'text-text-muted'}`}>{m.label.slice(0, 3)}</span>
+                                        <span className={`text-xs font-extrabold tabular-nums mt-0.5 ${net >= 0 ? 'text-primary' : 'text-red-500'}`}>{formatCurrency(net)}</span>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden lg:block bg-surface border border-border rounded-2xl overflow-hidden shadow-sm">
                 <div className="overflow-x-auto">
                     <table className="w-full min-w-[700px] border-collapse">
                         <thead>
@@ -383,6 +515,12 @@ function GroupSection({ group, months, isCollapsed, CollapseIcon, onToggle, onRo
                                         <Icon className="w-3.5 h-3.5" style={{ color: group.color }} />
                                     </div>
                                     <span className="text-sm text-text-main truncate">{row.name}</span>
+                                    {row.accountName && (
+                                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-primary/10 text-[10px] font-medium text-primary shrink-0 max-w-[120px] truncate" title={row.accountName}>
+                                            <CreditCard className="w-2.5 h-2.5 shrink-0" />
+                                            {row.accountName}
+                                        </span>
+                                    )}
                                     {isClickable && (
                                         <Pencil className={`w-3 h-3 ml-auto shrink-0 transition-opacity ${needsAttention ? 'text-amber-500 opacity-60' : 'text-text-muted opacity-0 group-hover:opacity-60'
                                             }`} />

@@ -19,11 +19,11 @@ export function EditAccountModal({ account, onClose, onSuccess }: EditAccountMod
     type: account.type as 'debit' | 'credit' | 'savings' | 'investment',
     balance: account.balance?.toString() || '0',
     credit_limit: account.credit_limit?.toString() || '',
-    cut_off_day: (account as any).cut_off_day?.toString() || '',
-    payment_due_day: (account as any).payment_due_day?.toString() || '',
-    card_number: (account as any).card_number || '',
-    billing_period_start_day: (account as any).billing_period_start_day?.toString() || '',
-    billing_period_end_day: (account as any).billing_period_end_day?.toString() || '',
+    cut_off_day: account.cut_off_day?.toString() || '',
+    payment_due_day: account.payment_due_day?.toString() || '',
+    card_number: account.card_number || '',
+    billing_period_start_day: account.billing_period_start_day?.toString() || '',
+    billing_period_end_day: account.billing_period_end_day?.toString() || '',
   });
   const [calculatedAmount, setCalculatedAmount] = useState<number | null>(null);
   const [calculating, setCalculating] = useState(false);
@@ -92,14 +92,14 @@ export function EditAccountModal({ account, onClose, onSuccess }: EditAccountMod
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[60] overflow-y-auto">
-      <div className="bg-[#1a3a2e] rounded-2xl max-w-md w-full p-4 sm:p-6 my-8 border border-emerald-500/30 max-h-[calc(100vh-4rem)] overflow-y-auto">
+      <div className="bg-surface rounded-2xl max-w-md w-full p-4 sm:p-6 my-8 border border-border max-h-[calc(100vh-4rem)] overflow-y-auto">
         <div className="flex justify-between items-center mb-4 sm:mb-6">
-          <h3 className="text-lg sm:text-xl font-bold text-white">Editar Cuenta</h3>
+          <h3 className="text-lg sm:text-xl font-bold text-text-main">Editar Cuenta</h3>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-800/50 rounded-lg transition"
+            className="p-2 hover:bg-background rounded-lg transition"
           >
-            <X className="w-5 h-5 text-gray-400" />
+            <X className="w-5 h-5 text-text-muted" />
           </button>
         </div>
 
@@ -111,7 +111,7 @@ export function EditAccountModal({ account, onClose, onSuccess }: EditAccountMod
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-text-muted mb-2">
               Nombre de la Cuenta
             </label>
             <input
@@ -119,20 +119,20 @@ export function EditAccountModal({ account, onClose, onSuccess }: EditAccountMod
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               required
-              className="w-full px-4 py-2 bg-gray-800/50 border border-gray-700 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-white"
+              className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-text-main"
               placeholder="Ej: Visa Principal"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-text-muted mb-2">
               Banco
             </label>
             <select
               value={formData.bank_name}
               onChange={(e) => setFormData({ ...formData, bank_name: e.target.value })}
               required
-              className="w-full px-4 py-2 bg-gray-800/50 border border-gray-700 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-white"
+              className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-text-main"
             >
               <option value="">Selecciona un banco</option>
               {MEXICAN_BANKS.map((bank) => (
@@ -144,7 +144,7 @@ export function EditAccountModal({ account, onClose, onSuccess }: EditAccountMod
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-text-muted mb-2">
               Tipo de Cuenta
             </label>
             <select
@@ -155,7 +155,7 @@ export function EditAccountModal({ account, onClose, onSuccess }: EditAccountMod
                   type: e.target.value as typeof formData.type,
                 })
               }
-              className="w-full px-4 py-2 bg-gray-800/50 border border-gray-700 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-white"
+              className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-text-main"
             >
               <option value="debit">Débito</option>
               <option value="credit">Crédito</option>
@@ -165,7 +165,7 @@ export function EditAccountModal({ account, onClose, onSuccess }: EditAccountMod
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-text-muted mb-2">
               Balance Actual
             </label>
             <input
@@ -174,7 +174,7 @@ export function EditAccountModal({ account, onClose, onSuccess }: EditAccountMod
               value={formData.balance}
               onChange={(e) => setFormData({ ...formData, balance: e.target.value })}
               required
-              className="w-full px-4 py-2 bg-gray-800/50 border border-gray-700 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-white"
+              className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-text-main"
               placeholder="0.00"
             />
           </div>
@@ -182,7 +182,7 @@ export function EditAccountModal({ account, onClose, onSuccess }: EditAccountMod
           {formData.type === 'credit' && (
             <>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-text-muted mb-2">
                   Límite de Crédito
                 </label>
                 <input
@@ -192,13 +192,13 @@ export function EditAccountModal({ account, onClose, onSuccess }: EditAccountMod
                   onChange={(e) =>
                     setFormData({ ...formData, credit_limit: e.target.value })
                   }
-                  className="w-full px-4 py-2 bg-gray-800/50 border border-gray-700 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-white"
+                  className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-text-main"
                   placeholder="0.00"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-text-muted mb-2">
                   Número de Tarjeta (últimos 4 dígitos)
                 </label>
                 <input
@@ -207,21 +207,21 @@ export function EditAccountModal({ account, onClose, onSuccess }: EditAccountMod
                   onChange={(e) =>
                     setFormData({ ...formData, card_number: e.target.value })
                   }
-                  className="w-full px-4 py-2 bg-gray-800/50 border border-gray-700 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-white"
+                  className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-text-main"
                   placeholder="**** **** **** 1234"
                   maxLength={19}
                 />
               </div>
 
-              <div className="bg-emerald-900/20 border border-emerald-500/30 rounded-lg p-4">
-                <h4 className="text-sm font-semibold text-emerald-400 mb-3">Configuración del Periodo de Facturación</h4>
-                <p className="text-xs text-gray-400 mb-4">
+              <div className="bg-primary/10 border border-primary/30 rounded-lg p-4">
+                <h4 className="text-sm font-semibold text-primary mb-3">Configuración del Periodo de Facturación</h4>
+                <p className="text-xs text-text-muted mb-4">
                   Define el rango de días para calcular automáticamente el monto a pagar. El sistema sumará todos los gastos realizados en este periodo.
                 </p>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-medium text-gray-300 mb-2">
+                    <label className="block text-xs font-medium text-text-muted mb-2">
                       Día Inicio Periodo
                     </label>
                     <input
@@ -232,14 +232,14 @@ export function EditAccountModal({ account, onClose, onSuccess }: EditAccountMod
                       onChange={(e) =>
                         setFormData({ ...formData, billing_period_start_day: e.target.value })
                       }
-                      className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-white text-sm"
+                      className="w-full px-3 py-2 bg-background border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-text-main text-sm"
                       placeholder="1-31"
                     />
-                    <p className="text-[10px] text-gray-500 mt-1">Primer día a contabilizar</p>
+                    <p className="text-[10px] text-text-muted mt-1">Primer día a contabilizar</p>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-gray-300 mb-2">
+                    <label className="block text-xs font-medium text-text-muted mb-2">
                       Día Fin Periodo
                     </label>
                     <input
@@ -250,48 +250,48 @@ export function EditAccountModal({ account, onClose, onSuccess }: EditAccountMod
                       onChange={(e) =>
                         setFormData({ ...formData, billing_period_end_day: e.target.value })
                       }
-                      className="w-full px-3 py-2 bg-gray-800/50 border border-gray-700 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-white text-sm"
+                      className="w-full px-3 py-2 bg-background border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-text-main text-sm"
                       placeholder="1-31"
                     />
-                    <p className="text-[10px] text-gray-500 mt-1">Último día a contabilizar</p>
+                    <p className="text-[10px] text-text-muted mt-1">Último día a contabilizar</p>
                   </div>
                 </div>
 
-                <div className="mt-3 p-2 bg-gray-800/30 rounded border border-gray-700">
-                  <p className="text-[10px] text-gray-400">
-                    <span className="font-semibold text-emerald-400">Ejemplo:</span> Si tu periodo va del día 25 al día 5 del siguiente mes, ingresa: Inicio=25, Fin=5
+                <div className="mt-3 p-2 bg-background rounded border border-border">
+                  <p className="text-[10px] text-text-muted">
+                    <span className="font-semibold text-primary">Ejemplo:</span> Si tu periodo va del día 25 al día 5 del siguiente mes, ingresa: Inicio=25, Fin=5
                   </p>
                 </div>
               </div>
 
-              <div className="bg-gray-800/30 border border-gray-700 rounded-lg p-4">
+              <div className="bg-background border border-border rounded-lg p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <label className="block text-sm font-medium text-gray-400">
+                  <label className="block text-sm font-medium text-text-muted">
                     Monto a Pagar
                   </label>
                   <button
                     type="button"
                     onClick={handleCalculateAmount}
                     disabled={calculating || !formData.billing_period_start_day || !formData.billing_period_end_day}
-                    className="px-3 py-1 text-xs bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition font-medium"
+                    className="px-3 py-1 text-xs bg-primary text-primary-fg rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition font-medium"
                   >
                     {calculating ? 'Calculando...' : 'Calcular'}
                   </button>
                 </div>
-                <div className="px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white text-lg font-mono">
+                <div className="px-4 py-3 bg-background border border-border rounded-lg text-text-main text-lg font-mono">
                   $ {calculatedAmount !== null
-                      ? new Intl.NumberFormat('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(calculatedAmount)
-                      : ((account as any).amount_due ? new Intl.NumberFormat('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format((account as any).amount_due) : '0.00')
+                    ? new Intl.NumberFormat('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(calculatedAmount)
+                    : (account.amount_due ? new Intl.NumberFormat('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(account.amount_due) : '0.00')
                   }
                 </div>
-                <p className="text-xs text-gray-500 mt-2">
+                <p className="text-xs text-text-muted mt-2">
                   ℹ️ Haz clic en "Calcular" para obtener el monto basado en los gastos del periodo configurado
                 </p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-text-muted mb-2">
                     Día de Corte
                   </label>
                   <input
@@ -302,13 +302,13 @@ export function EditAccountModal({ account, onClose, onSuccess }: EditAccountMod
                     onChange={(e) =>
                       setFormData({ ...formData, cut_off_day: e.target.value })
                     }
-                    className="w-full px-4 py-2 bg-gray-800/50 border border-gray-700 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-white"
+                    className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-text-main"
                     placeholder="1-31"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-text-muted mb-2">
                     Día de Pago
                   </label>
                   <input
@@ -319,7 +319,7 @@ export function EditAccountModal({ account, onClose, onSuccess }: EditAccountMod
                     onChange={(e) =>
                       setFormData({ ...formData, payment_due_day: e.target.value })
                     }
-                    className="w-full px-4 py-2 bg-gray-800/50 border border-gray-700 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-white"
+                    className="w-full px-4 py-2 bg-background border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-text-main"
                     placeholder="1-31"
                   />
                 </div>
@@ -331,14 +331,14 @@ export function EditAccountModal({ account, onClose, onSuccess }: EditAccountMod
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-700 text-gray-300 font-medium rounded-lg hover:bg-gray-800/50 transition"
+              className="flex-1 px-4 py-2 border border-border text-text-muted font-medium rounded-lg hover:bg-background transition"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-medium rounded-lg transition disabled:opacity-50"
+              className="flex-1 px-4 py-2 bg-primary hover:opacity-90 text-primary-fg font-medium rounded-lg transition disabled:opacity-50"
             >
               {loading ? 'Guardando...' : 'Guardar'}
             </button>

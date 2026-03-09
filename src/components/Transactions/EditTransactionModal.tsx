@@ -33,8 +33,8 @@ export function EditTransactionModal({ transaction, onClose, onSuccess }: EditTr
     transaction_time: transaction.transaction_time || '',
     category: transaction.category || '',
     account_id: transaction.account_id,
-    supplier_id: (transaction as any).supplier_id || '',
-    is_recurring: (transaction as any).is_recurring || false,
+    supplier_id: transaction.supplier_id || '',
+    is_recurring: transaction.is_recurring || false,
     recurring_frequency: (transaction as any).recurring_frequency || 'monthly',
     recurring_day: (transaction as any).recurring_day || 1,
   });
@@ -120,13 +120,13 @@ export function EditTransactionModal({ transaction, onClose, onSuccess }: EditTr
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
-      <div className="bg-[#112217] rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto border border-gray-800">
-        <div className="sticky top-0 bg-[#112217] border-b border-gray-800 p-4 sm:p-6 flex items-center justify-between z-10">
-          <h2 className="text-xl sm:text-2xl font-bold text-white">Editar Transacción</h2>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4 z-[60]">
+      <div className="bg-surface w-full h-full sm:h-auto sm:rounded-xl sm:max-w-md sm:max-h-[90vh] overflow-y-auto sm:border sm:border-border">
+        <div className="sticky top-0 bg-surface border-b border-border p-4 sm:p-6 flex items-center justify-between z-10">
+          <h2 className="text-xl sm:text-2xl font-bold text-text-main">Editar Transacción</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-white transition"
+            className="text-text-muted hover:text-text-main transition"
           >
             <X className="w-6 h-6" />
           </button>
@@ -134,29 +134,27 @@ export function EditTransactionModal({ transaction, onClose, onSuccess }: EditTr
 
         <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-[#92c9a4] mb-2">
+            <label className="block text-sm font-medium text-text-muted mb-2">
               Tipo de Transacción
             </label>
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
                 onClick={() => setFormData({ ...formData, type: 'expense' })}
-                className={`py-3 px-4 rounded-lg font-medium transition ${
-                  formData.type === 'expense'
-                    ? 'bg-red-500 text-white'
-                    : 'bg-[#23482f] text-gray-400 hover:bg-[#2d5a3d]'
-                }`}
+                className={`py-3 px-4 rounded-lg font-medium transition ${formData.type === 'expense'
+                  ? 'bg-red-500 text-white'
+                  : 'bg-background text-text-muted hover:bg-surface'
+                  }`}
               >
                 Gasto
               </button>
               <button
                 type="button"
                 onClick={() => setFormData({ ...formData, type: 'income' })}
-                className={`py-3 px-4 rounded-lg font-medium transition ${
-                  formData.type === 'income'
-                    ? 'bg-green-500 text-white'
-                    : 'bg-[#23482f] text-gray-400 hover:bg-[#2d5a3d]'
-                }`}
+                className={`py-3 px-4 rounded-lg font-medium transition ${formData.type === 'income'
+                  ? 'bg-green-500 text-white'
+                  : 'bg-background text-text-muted hover:bg-surface'
+                  }`}
               >
                 Ingreso
               </button>
@@ -164,7 +162,7 @@ export function EditTransactionModal({ transaction, onClose, onSuccess }: EditTr
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-[#92c9a4] mb-2">
+            <label className="block text-sm font-medium text-text-muted mb-2">
               Descripción
             </label>
             <input
@@ -177,7 +175,7 @@ export function EditTransactionModal({ transaction, onClose, onSuccess }: EditTr
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-[#92c9a4] mb-2">
+            <label className="block text-sm font-medium text-text-muted mb-2">
               Monto
             </label>
             <input
@@ -191,7 +189,7 @@ export function EditTransactionModal({ transaction, onClose, onSuccess }: EditTr
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-[#92c9a4] mb-2">
+            <label className="block text-sm font-medium text-text-muted mb-2">
               Cuenta
             </label>
             <select
@@ -210,7 +208,7 @@ export function EditTransactionModal({ transaction, onClose, onSuccess }: EditTr
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-[#92c9a4] mb-2">
+            <label className="block text-sm font-medium text-text-muted mb-2">
               Categoría
             </label>
             <select
@@ -228,7 +226,7 @@ export function EditTransactionModal({ transaction, onClose, onSuccess }: EditTr
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-[#92c9a4] mb-2">
+            <label className="block text-sm font-medium text-text-muted mb-2">
               Proveedor (opcional)
             </label>
             <select
@@ -247,54 +245,54 @@ export function EditTransactionModal({ transaction, onClose, onSuccess }: EditTr
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-[#92c9a4] mb-2">
+              <label className="block text-sm font-medium text-text-muted mb-2">
                 Fecha
               </label>
               <input
                 type="date"
                 value={formData.transaction_date}
                 onChange={(e) => setFormData({ ...formData, transaction_date: e.target.value })}
-                className="w-full px-4 py-3 rounded-lg bg-[#23482f] text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="w-full px-4 py-3 rounded-lg bg-background text-text-main border border-border focus:outline-none focus:ring-2 focus:ring-primary/50"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[#92c9a4] mb-2">
+              <label className="block text-sm font-medium text-text-muted mb-2">
                 Hora (opcional)
               </label>
               <input
                 type="time"
                 value={formData.transaction_time}
                 onChange={(e) => setFormData({ ...formData, transaction_time: e.target.value })}
-                className="w-full px-4 py-3 rounded-lg bg-[#23482f] text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="w-full px-4 py-3 rounded-lg bg-background text-text-main border border-border focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
             </div>
           </div>
 
-          <div className="border-t border-gray-700 pt-4">
+          <div className="border-t border-border pt-4">
             <label className="flex items-center gap-3 cursor-pointer">
               <input
                 type="checkbox"
                 checked={formData.is_recurring}
                 onChange={(e) => setFormData({ ...formData, is_recurring: e.target.checked })}
-                className="w-5 h-5 rounded border-gray-600 bg-[#23482f] text-primary focus:ring-primary focus:ring-offset-0"
+                className="w-5 h-5 rounded border-border bg-background text-primary focus:ring-primary focus:ring-offset-0"
               />
-              <span className="text-white font-medium">Configurar como compra recurrente</span>
+              <span className="text-text-main font-medium">Configurar como compra recurrente</span>
             </label>
           </div>
 
           {formData.is_recurring && (
-            <div className="bg-[#1c3a27] p-4 rounded-lg space-y-3">
+            <div className="bg-background p-4 rounded-lg space-y-3">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-[#92c9a4] mb-2">
+                  <label className="block text-sm font-medium text-text-muted mb-2">
                     Frecuencia
                   </label>
                   <select
                     value={formData.recurring_frequency}
                     onChange={(e) => setFormData({ ...formData, recurring_frequency: e.target.value })}
-                    className="w-full px-4 py-3 rounded-lg bg-[#23482f] text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    className="w-full px-4 py-3 rounded-lg bg-background text-text-main border border-border focus:outline-none focus:ring-2 focus:ring-primary/50"
                   >
                     <option value="daily">Diario</option>
                     <option value="weekly">Semanal</option>
@@ -306,22 +304,22 @@ export function EditTransactionModal({ transaction, onClose, onSuccess }: EditTr
                 <div>
                   <label className="block text-sm font-medium text-[#92c9a4] mb-2">
                     {formData.recurring_frequency === 'monthly' ? 'Día del mes' :
-                     formData.recurring_frequency === 'weekly' ? 'Día de la semana (1-7)' :
-                     formData.recurring_frequency === 'yearly' ? 'Día del año (1-365)' : 'Intervalo'}
+                      formData.recurring_frequency === 'weekly' ? 'Día de la semana (1-7)' :
+                        formData.recurring_frequency === 'yearly' ? 'Día del año (1-365)' : 'Intervalo'}
                   </label>
                   <input
                     type="number"
                     min="1"
                     max={formData.recurring_frequency === 'monthly' ? 31 :
-                         formData.recurring_frequency === 'weekly' ? 7 :
-                         formData.recurring_frequency === 'yearly' ? 365 : 365}
+                      formData.recurring_frequency === 'weekly' ? 7 :
+                        formData.recurring_frequency === 'yearly' ? 365 : 365}
                     value={formData.recurring_day}
                     onChange={(e) => setFormData({ ...formData, recurring_day: parseInt(e.target.value) })}
-                    className="w-full px-4 py-3 rounded-lg bg-[#23482f] text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    className="w-full px-4 py-3 rounded-lg bg-background text-text-main border border-border focus:outline-none focus:ring-2 focus:ring-primary/50"
                   />
                 </div>
               </div>
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-text-muted">
                 Esta transacción se repetirá automáticamente según la frecuencia configurada.
               </p>
             </div>
@@ -331,14 +329,14 @@ export function EditTransactionModal({ transaction, onClose, onSuccess }: EditTr
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-3 bg-[#23482f] text-white rounded-lg font-medium hover:bg-[#2d5a3d] transition"
+              className="flex-1 px-4 py-3 bg-background text-text-main rounded-lg font-medium hover:bg-surface transition"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 px-4 py-3 bg-[#11d452] text-[#112217] rounded-lg font-bold hover:bg-[#0fc045] transition disabled:opacity-50 shadow-lg"
+              className="flex-1 px-4 py-3 bg-primary text-primary-fg rounded-lg font-bold hover:opacity-90 transition disabled:opacity-50 shadow-lg"
             >
               {loading ? 'Guardando...' : 'Guardar Cambios'}
             </button>

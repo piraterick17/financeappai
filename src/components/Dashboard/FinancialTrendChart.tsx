@@ -33,9 +33,8 @@ function CustomTooltip({ active, payload }: TooltipProps<number, string>) {
           <div className="border-t border-border mt-2 pt-2 flex items-center justify-between gap-4">
             <span className="text-text-muted font-medium">Neto:</span>
             <span
-              className={`font-bold ${
-                payload[0].payload.neto >= 0 ? 'text-green-400' : 'text-red-400'
-              }`}
+              className={`font-bold ${payload[0].payload.neto >= 0 ? 'text-green-400' : 'text-red-400'
+                }`}
             >
               {formatCurrency(payload[0].payload.neto)}
             </span>
@@ -65,7 +64,8 @@ export function FinancialTrendChart({ data, loading }: FinancialTrendChartProps)
           Tendencia Financiera (últimos 6 meses)
         </h3>
         <div className="h-64 sm:h-80 flex items-center justify-center">
-          <p className="text-text-muted">No hay datos disponibles</p>
+          <p className="text-text-muted">Aún no hay datos suficientes</p>
+          <p className="text-text-muted/60 text-sm mt-1">Tu gráfica de ingresos vs gastos aparecerá aquí cuando registres movimientos.</p>
         </div>
       </div>
     );

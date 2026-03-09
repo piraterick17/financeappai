@@ -99,7 +99,19 @@ export function AccountsList({ onViewDetails }: AccountsListProps) {
   };
 
   const getTotalBalance = () => {
-    return accounts.reduce((sum, acc) => sum + (Number(acc.balance) || 0), 0);
+    const assets = accounts
+      .filter(acc => acc.type !== 'credit')
+      .reduce((sum, acc) => sum + (Number(acc.balance) || 0), 0);
+    const liabilities = accounts
+      .filter(acc => acc.type === 'credit')
+      .reduce((sum, acc) => sum + Math.abs(Number(acc.balance) || 0), 0);
+    return assets - liabilities;
+  };
+
+  const getTotalDebt = () => {
+    return accounts
+      .filter(acc => acc.type === 'credit')
+      .reduce((sum, acc) => sum + Math.abs(Number(acc.balance) || 0), 0);
   };
 
   const getConsolidatedBalance = () => {
@@ -161,8 +173,15 @@ export function AccountsList({ onViewDetails }: AccountsListProps) {
             <h1 className="text-text-main text-2xl sm:text-3xl lg:text-4xl font-black leading-tight tracking-tight">
               Resumen de Cuentas
             </h1>
-            <p className="text-primary text-sm sm:text-base font-medium">
-              Saldo Total: {formatCurrency(getTotalBalance())}
+            <p className="text-sm font-medium">
+              <span className={`${getTotalBalance() >= 0 ? 'text-primary' : 'text-red-400'}`}>
+                Patrimonio Neto: {formatCurrency(getTotalBalance())}
+              </span>
+              {getTotalDebt() > 0 && (
+                <span className="text-text-muted ml-2 text-xs">
+                  (Deuda: {formatCurrency(getTotalDebt())})
+                </span>
+              )}
             </p>
           </div>
           <button
@@ -217,9 +236,8 @@ export function AccountsList({ onViewDetails }: AccountsListProps) {
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="text-right">
-                      <p className={`font-bold text-base ${
-                        stack.totalBalance < 0 ? 'text-red-400' : 'text-primary'
-                      }`}>
+                      <p className={`font-bold text-base ${stack.totalBalance < 0 ? 'text-red-400' : 'text-primary'
+                        }`}>
                         {formatCurrency(stack.totalBalance)}
                       </p>
                     </div>
@@ -241,29 +259,24 @@ export function AccountsList({ onViewDetails }: AccountsListProps) {
                     className="relative group cursor-pointer h-64 flex items-center justify-center p-4 transition-transform duration-300 hover:scale-105"
                   >
                     <div
-                      className={`absolute w-40 h-40 bg-${color}-500/30 dark:bg-${color}-500/20 rounded-xl transform ${
-                        index % 2 === 0 ? 'rotate-[-15deg]' : 'rotate-[12deg]'
-                      } transition-transform duration-300 ${
-                        index % 2 === 0 ? 'group-hover:rotate-[-20deg]' : 'group-hover:rotate-[18deg]'
-                      }`}
+                      className={`absolute w-40 h-40 bg-${color}-500/30 dark:bg-${color}-500/20 rounded-xl transform ${index % 2 === 0 ? 'rotate-[-15deg]' : 'rotate-[12deg]'
+                        } transition-transform duration-300 ${index % 2 === 0 ? 'group-hover:rotate-[-20deg]' : 'group-hover:rotate-[18deg]'
+                        }`}
                       style={{
                         backgroundColor: `rgb(59 130 246 / 0.2)`,
                       }}
                     ></div>
                     <div
-                      className={`absolute w-44 h-44 bg-${color}-500/50 dark:bg-${color}-500/30 rounded-xl transform ${
-                        index % 2 === 0 ? 'rotate-[10deg]' : 'rotate-[-8deg]'
-                      } transition-transform duration-300 ${
-                        index % 2 === 0 ? 'group-hover:rotate-[15deg]' : 'group-hover:rotate-[-14deg]'
-                      }`}
+                      className={`absolute w-44 h-44 bg-${color}-500/50 dark:bg-${color}-500/30 rounded-xl transform ${index % 2 === 0 ? 'rotate-[10deg]' : 'rotate-[-8deg]'
+                        } transition-transform duration-300 ${index % 2 === 0 ? 'group-hover:rotate-[15deg]' : 'group-hover:rotate-[-14deg]'
+                        }`}
                       style={{
                         backgroundColor: `rgb(59 130 246 / 0.3)`,
                       }}
                     ></div>
                     <div
-                      className={`relative w-48 h-48 bg-surface rounded-xl shadow-2xl flex flex-col justify-between p-5 transform ${
-                        index % 2 === 0 ? 'rotate-[-5deg]' : 'rotate-[4deg]'
-                      } transition-transform duration-300 group-hover:rotate-0`}
+                      className={`relative w-48 h-48 bg-surface rounded-xl shadow-2xl flex flex-col justify-between p-5 transform ${index % 2 === 0 ? 'rotate-[-5deg]' : 'rotate-[4deg]'
+                        } transition-transform duration-300 group-hover:rotate-0`}
                     >
                       <div className="flex flex-col gap-2">
                         <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
@@ -277,9 +290,8 @@ export function AccountsList({ onViewDetails }: AccountsListProps) {
                       </div>
                       <div className="text-right">
                         <p className="text-xs text-text-muted">Saldo Total</p>
-                        <p className={`text-2xl font-bold ${
-                          stack.totalBalance < 0 ? 'text-red-400' : 'text-text-main'
-                        }`}>
+                        <p className={`text-2xl font-bold ${stack.totalBalance < 0 ? 'text-red-400' : 'text-text-main'
+                          }`}>
                           {formatCurrency(stack.totalBalance)}
                         </p>
                       </div>

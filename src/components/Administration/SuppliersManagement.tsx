@@ -24,6 +24,7 @@ export function SuppliersManagement() {
 
     const { error } = await supabase
       .from('suppliers')
+      // @ts-expect-error deleted_at exists in DB
       .update({ deleted_at: new Date().toISOString() })
       .eq('id', id);
 
@@ -43,8 +44,8 @@ export function SuppliersManagement() {
   if (loading) {
     return (
       <div className="animate-pulse space-y-4">
-        <div className="h-8 bg-gray-800 rounded w-1/3"></div>
-        <div className="h-32 bg-gray-800 rounded"></div>
+        <div className="h-8 bg-surface rounded w-1/3"></div>
+        <div className="h-32 bg-surface rounded"></div>
       </div>
     );
   }
@@ -54,11 +55,11 @@ export function SuppliersManagement() {
       <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
         <div className="flex-1">
           <div className="flex w-full items-stretch rounded-lg">
-            <div className="text-[#92c9a4] flex bg-[#23482f] items-center justify-center pl-3 sm:pl-4 rounded-l-lg">
+            <div className="text-text-muted flex bg-background items-center justify-center pl-3 sm:pl-4 rounded-l-lg">
               <Search className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <input
-              className="flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-r-lg text-white focus:outline-none focus:ring-2 focus:ring-primary/50 border-none bg-[#23482f] h-10 sm:h-12 placeholder:text-[#92c9a4] px-3 sm:px-4 text-sm sm:text-base font-normal"
+              className="flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-r-lg text-text-main focus:outline-none focus:ring-2 focus:ring-primary/50 border border-border bg-background h-10 sm:h-12 placeholder:text-text-muted px-3 sm:px-4 text-sm sm:text-base font-normal"
               placeholder="Buscar proveedores..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -67,7 +68,7 @@ export function SuppliersManagement() {
         </div>
         <button
           onClick={() => setShowAddModal(true)}
-          className="flex items-center justify-center gap-2 h-10 sm:h-12 px-4 sm:px-6 bg-primary text-[#112217] rounded-lg text-sm sm:text-base font-bold hover:bg-primary/90 transition shadow-lg"
+          className="flex items-center justify-center gap-2 h-10 sm:h-12 px-4 sm:px-6 bg-primary text-primary-fg rounded-lg text-sm sm:text-base font-bold hover:bg-primary/90 transition shadow-lg"
         >
           <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
           Nuevo Proveedor
@@ -75,9 +76,9 @@ export function SuppliersManagement() {
       </div>
 
       {filteredSuppliers.length === 0 ? (
-        <div className="text-center py-12 bg-[#1c3a27] rounded-lg">
-          <Building2 className="w-12 h-12 text-gray-600 mx-auto mb-4" />
-          <p className="text-gray-400 text-lg">
+        <div className="text-center py-12 bg-surface rounded-lg border border-border">
+          <Building2 className="w-12 h-12 text-text-muted mx-auto mb-4" />
+          <p className="text-text-muted text-lg">
             {searchTerm ? 'No se encontraron proveedores' : 'No hay proveedores registrados'}
           </p>
           {!searchTerm && (
@@ -94,16 +95,16 @@ export function SuppliersManagement() {
           {filteredSuppliers.map((supplier) => (
             <div
               key={supplier.id}
-              className="bg-[#1c3a27] rounded-lg p-4 border border-gray-800 hover:border-gray-700 transition"
+              className="bg-surface rounded-lg p-4 border border-border hover:border-primary/50 transition"
             >
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-[#11d452]/20">
-                    <Building2 className="w-5 h-5 text-[#11d452]" />
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-primary/20">
+                    <Building2 className="w-5 h-5 text-primary" />
                   </div>
                   <div>
-                    <h3 className="text-white font-semibold">{supplier.name}</h3>
-                    <p className="text-xs text-gray-400">
+                    <h3 className="text-text-main font-semibold">{supplier.name}</h3>
+                    <p className="text-xs text-text-muted">
                       Proveedor
                     </p>
                   </div>
@@ -114,13 +115,13 @@ export function SuppliersManagement() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => setEditingSupplier(supplier)}
-                    className="p-2 text-gray-400 hover:text-primary rounded transition"
+                    className="p-2 text-text-muted hover:text-primary rounded transition"
                   >
                     <Edit className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => handleDelete(supplier.id, supplier.name)}
-                    className="p-2 text-gray-400 hover:text-red-500 rounded transition"
+                    className="p-2 text-text-muted hover:text-red-500 rounded transition"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>

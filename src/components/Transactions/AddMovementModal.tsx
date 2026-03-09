@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
-import { X, Calendar, CreditCard, ArrowUpCircle, ArrowDownCircle, Store, Tag, DollarSign, Clock, Plus } from 'lucide-react';
+import { X, Calendar, CreditCard, ArrowUpCircle, ArrowDownCircle, Store, Tag, DollarSign, Clock, Plus, AlertCircle } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAccounts } from '../../hooks/useAccounts';
@@ -18,6 +19,7 @@ interface AddMovementModalProps {
 export function AddMovementModal({ onClose, onSuccess }: AddMovementModalProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const { data: accountsData } = useAccounts(user?.id);
   const { data: categoriesData } = useCategories(user?.id);
@@ -158,8 +160,8 @@ export function AddMovementModal({ onClose, onSuccess }: AddMovementModalProps) 
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[60]">
-      <div className="bg-surface rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 border border-border shadow-2xl">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4 z-[60]">
+      <div className="bg-surface w-full h-full sm:h-auto sm:rounded-2xl sm:max-w-2xl sm:max-h-[90vh] overflow-y-auto p-5 sm:p-6 sm:border sm:border-border shadow-2xl">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-xl font-bold text-text-main">Nuevo Movimiento</h3>
           <button onClick={onClose} className="p-2 hover:bg-background rounded-lg transition text-text-muted">
@@ -270,6 +272,23 @@ export function AddMovementModal({ onClose, onSuccess }: AddMovementModalProps) 
                 ))}
                 {availableAccounts.length === 0 && <option value="" disabled>No hay cuentas disponibles</option>}
               </select>
+              {availableAccounts.length === 0 && (
+                <div className="mt-2 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-xs text-amber-600 dark:text-amber-400">
+                      Necesitas al menos una cuenta para registrar movimientos.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => { onClose(); navigate('/accounts'); }}
+                      className="text-xs text-primary font-semibold mt-1 hover:underline"
+                    >
+                      + Crear mi primera cuenta
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
             <div>
               <label className="block text-xs font-medium text-text-muted mb-1.5 uppercase">Categoría</label>

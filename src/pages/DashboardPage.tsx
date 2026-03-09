@@ -18,7 +18,7 @@ export function DashboardPage() {
         <Route path="accounts/:accountId" element={<AccountDetailsWrapper />} />
         <Route path="transactions" element={<TransactionsLandingPage />} />
         <Route path="transactions/history" element={<TransactionsList />} />
-        <Route path="budget" element={<div>Presupuesto (Próximamente)</div>} />
+        <Route path="budget" element={<Navigate to="/forecast" replace />} />
         <Route path="forecast" element={<ForecastView />} />
         <Route path="subscriptions" element={<SubscriptionsPage />} />
         <Route path="administration" element={<AdministrationPage />} />
