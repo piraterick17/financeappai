@@ -96,6 +96,105 @@ const FINANCIAL_TOOLS = [
                     required: ['transaction_id'],
                 },
             },
+            {
+                name: 'register_subscription',
+                description: 'Registra una suscripción o gasto fijo recurrente (Netflix, Spotify, gym, renta, etc.) en la tabla fixed_expenses. Usa esta función cuando el usuario quiera agregar un pago recurrente, NO register_transaction.',
+                parameters: {
+                    type: 'OBJECT',
+                    properties: {
+                        name: {
+                            type: 'STRING',
+                            description: 'Nombre del servicio o gasto fijo (ej: "Netflix", "Gym", "Renta")',
+                        },
+                        amount: {
+                            type: 'NUMBER',
+                            description: 'Monto positivo en pesos mexicanos del pago recurrente.',
+                        },
+                        frequency: {
+                            type: 'STRING',
+                            description: 'Frecuencia del pago: monthly (mensual), bimonthly (bimestral), quarterly (trimestral), semiannual (semestral), annual (anual)',
+                            enum: ['monthly', 'bimonthly', 'quarterly', 'semiannual', 'annual'],
+                        },
+                        due_day: {
+                            type: 'NUMBER',
+                            description: 'Día del mes en que se cobra (1-31). Si no se indica, usar 1.',
+                        },
+                        account_name: {
+                            type: 'STRING',
+                            description: 'Nombre de la cuenta/tarjeta donde se cobra.',
+                        },
+                        category_name: {
+                            type: 'STRING',
+                            description: 'Categoría del gasto (ej: "Entretenimiento", "Servicios").',
+                        },
+                        start_date: {
+                            type: 'STRING',
+                            description: 'Fecha de inicio en formato YYYY-MM-DD. Si no se indica, usar hoy.',
+                        },
+                    },
+                    required: ['name', 'amount', 'frequency', 'due_day', 'account_name'],
+                },
+            },
+            {
+                name: 'update_account_balance',
+                description: 'Actualiza el saldo de una cuenta del usuario. Usa esto cuando el usuario diga "mi saldo en BBVA es X" o "actualiza el saldo de mi tarjeta a X".',
+                parameters: {
+                    type: 'OBJECT',
+                    properties: {
+                        account_name: {
+                            type: 'STRING',
+                            description: 'Nombre de la cuenta a actualizar. Se buscará por coincidencia parcial.',
+                        },
+                        new_balance: {
+                            type: 'NUMBER',
+                            description: 'Nuevo saldo de la cuenta. Para tarjetas de crédito, el saldo representa la deuda (positivo = deuda).',
+                        },
+                    },
+                    required: ['account_name', 'new_balance'],
+                },
+            },
+            {
+                name: 'register_credit_purchase',
+                description: 'Registra una compra a meses sin intereses (MSI) o con intereses en una tarjeta de crédito. Usa esto cuando el usuario haga una compra a plazos.',
+                parameters: {
+                    type: 'OBJECT',
+                    properties: {
+                        description: {
+                            type: 'STRING',
+                            description: 'Descripción de la compra (ej: "MacBook Pro", "Refrigerador Samsung")',
+                        },
+                        total_amount: {
+                            type: 'NUMBER',
+                            description: 'Monto total de la compra en pesos.',
+                        },
+                        installments: {
+                            type: 'NUMBER',
+                            description: 'Número total de mensualidades (ej: 3, 6, 12, 18, 24).',
+                        },
+                        account_name: {
+                            type: 'STRING',
+                            description: 'Nombre de la tarjeta de crédito donde se cargó.',
+                        },
+                        purchase_date: {
+                            type: 'STRING',
+                            description: 'Fecha de la compra en formato YYYY-MM-DD. Si no se indica, usar hoy.',
+                        },
+                        first_payment_date: {
+                            type: 'STRING',
+                            description: 'Fecha del primer pago/mensualidad en formato YYYY-MM-DD. Si no se indica, usar el próximo mes.',
+                        },
+                        interest_rate: {
+                            type: 'NUMBER',
+                            description: 'Tasa de interés anual (0 para MSI). Default: 0.',
+                        },
+                        category_name: {
+                            type: 'STRING',
+                            description: 'Categoría de la compra (ej: "Tecnología", "Hogar").',
+                        },
+                    },
+                    required: ['description', 'total_amount', 'installments', 'account_name'],
+                },
+            },
         ],
     },
 ];
@@ -269,6 +368,9 @@ CAPACIDADES:
 2. REGISTRAR transacciones nuevas (register_transaction)
 3. MODIFICAR transacciones existentes (update_transaction)
 4. ELIMINAR transacciones (delete_transaction)
+5. REGISTRAR suscripciones/gastos fijos recurrentes (register_subscription)
+6. ACTUALIZAR saldos de cuentas (update_account_balance)
+7. REGISTRAR compras a meses/MSI (register_credit_purchase)
 
 REGLAS CRÍTICAS PARA GESTIÓN DE TRANSACCIONES:
 
@@ -289,6 +391,25 @@ REGLAS PARA REGISTRAR GASTOS NUEVOS:
   • Tipo: gasto o ingreso (inferir del contexto)
 - SIEMPRE muestra un resumen de confirmación DESPUÉS de registrar
 - Recuerda el transaction_id que devuelve register_transaction en caso de que el usuario quiera corregir
+
+REGLAS PARA SUSCRIPCIONES (register_subscription):
+- Usa register_subscription cuando el usuario quiera agregar un pago recurrente: Netflix, Spotify, gym, renta, seguro, internet, etc.
+- NO uses register_transaction para suscripciones — usa register_subscription
+- Datos necesarios: nombre del servicio, monto, frecuencia (monthly/bimonthly/quarterly/semiannual/annual), día de pago, cuenta
+- Si el usuario dice "pago Netflix" o "mi suscripción de Notion", esto es una suscripción, no una transacción
+- Frecuencias válidas: monthly (mensual), bimonthly (bimestral), quarterly (trimestral), semiannual (semestral), annual (anual)
+
+REGLAS PARA ACTUALIZAR SALDOS (update_account_balance):
+- Usa update_account_balance cuando el usuario diga "mi saldo en X es Y" o "actualiza el saldo de mi tarjeta"
+- Para tarjetas de crédito, el saldo es la deuda actual (positivo = debe dinero)
+- SIEMPRE confirma mostrando el saldo anterior y el nuevo
+
+REGLAS PARA COMPRAS A MESES (register_credit_purchase):
+- Usa register_credit_purchase cuando el usuario compre algo a meses/MSI
+- Datos necesarios: descripción, monto total, número de meses, tarjeta
+- La mensualidad se calcula automáticamente: total / meses
+- Si no indica tasa de interés, asume 0 (MSI)
+- Si no indica fecha del primer pago, asume el próximo mes
 
 REGLAS PARA BUSCAR TRANSACCIONES:
 - El usuario puede referirse a una transacción por su DESCRIPCIÓN (ej: "Walmart", "Gasolina", "Tacos") o por su CATEGORÍA (ej: "Despensa", "Transporte")
@@ -362,6 +483,15 @@ async function executeFunction(
     }
     if (name === 'delete_transaction') {
         return await deleteTransaction(args, supabaseUrl, supabaseKey, accessToken);
+    }
+    if (name === 'register_subscription') {
+        return await registerSubscription(args, context, supabaseUrl, supabaseKey, accessToken);
+    }
+    if (name === 'update_account_balance') {
+        return await updateAccountBalance(args, context, supabaseUrl, supabaseKey, accessToken);
+    }
+    if (name === 'register_credit_purchase') {
+        return await registerCreditPurchase(args, context, supabaseUrl, supabaseKey, accessToken);
     }
     return { error: `Unknown function: ${name}` };
 }
@@ -556,6 +686,234 @@ async function deleteTransaction(
     return {
         success: true,
         message: 'Transacción eliminada exitosamente',
+    };
+}
+
+async function registerSubscription(
+    args: {
+        name: string;
+        amount: number;
+        frequency: string;
+        due_day: number;
+        account_name: string;
+        category_name?: string;
+        start_date?: string;
+    },
+    context: any,
+    supabaseUrl: string,
+    supabaseKey: string,
+    accessToken: string
+) {
+    const account = context.accounts.find(
+        (a: any) => a.name.toLowerCase().includes(args.account_name.toLowerCase())
+            || args.account_name.toLowerCase().includes(a.name.toLowerCase())
+    );
+    if (!account) {
+        return {
+            success: false,
+            error: `No encontré la cuenta "${args.account_name}". Cuentas disponibles: ${context.accounts.map((a: any) => a.name).join(', ')}`,
+        };
+    }
+
+    let categoryId = null;
+    if (args.category_name) {
+        const category = context._rawCategories?.find(
+            (c: any) => c.name.toLowerCase().includes(args.category_name!.toLowerCase())
+                || args.category_name!.toLowerCase().includes(c.name.toLowerCase())
+        );
+        if (category) categoryId = category.id;
+    }
+
+    const userPayload = JSON.parse(atob(accessToken.split('.')[1]));
+    const userId = userPayload.sub;
+
+    const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Mexico_City' }));
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+    const insertRes = await fetch(`${supabaseUrl}/rest/v1/fixed_expenses`, {
+        method: 'POST',
+        headers: {
+            apikey: supabaseKey,
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+            Prefer: 'return=representation',
+        },
+        body: JSON.stringify({
+            user_id: userId,
+            name: args.name,
+            amount: Math.abs(args.amount),
+            frequency: args.frequency || 'monthly',
+            due_day: args.due_day || 1,
+            account_id: account.id,
+            category_id: categoryId,
+            is_active: true,
+            start_date: args.start_date || todayStr,
+        }),
+    });
+
+    const insertData = await insertRes.json();
+    if (!insertRes.ok) {
+        return { success: false, error: `Error al crear suscripción: ${JSON.stringify(insertData)}` };
+    }
+
+    const freqLabels: Record<string, string> = {
+        monthly: 'mensual', bimonthly: 'bimestral', quarterly: 'trimestral',
+        semiannual: 'semestral', annual: 'anual',
+    };
+
+    return {
+        success: true,
+        message: 'Suscripción registrada exitosamente',
+        details: {
+            name: args.name,
+            amount: `$${Math.abs(args.amount).toLocaleString('es-MX')}`,
+            frequency: freqLabels[args.frequency] || args.frequency,
+            due_day: args.due_day,
+            account: account.name,
+        },
+    };
+}
+
+async function updateAccountBalance(
+    args: { account_name: string; new_balance: number },
+    context: any,
+    supabaseUrl: string,
+    supabaseKey: string,
+    accessToken: string
+) {
+    const account = context.accounts.find(
+        (a: any) => a.name.toLowerCase().includes(args.account_name.toLowerCase())
+            || args.account_name.toLowerCase().includes(a.name.toLowerCase())
+    );
+    if (!account) {
+        return {
+            success: false,
+            error: `No encontré la cuenta "${args.account_name}". Cuentas disponibles: ${context.accounts.map((a: any) => a.name).join(', ')}`,
+        };
+    }
+
+    const updateRes = await fetch(
+        `${supabaseUrl}/rest/v1/accounts?id=eq.${account.id}`,
+        {
+            method: 'PATCH',
+            headers: {
+                apikey: supabaseKey,
+                Authorization: `Bearer ${accessToken}`,
+                'Content-Type': 'application/json',
+                Prefer: 'return=representation',
+            },
+            body: JSON.stringify({ balance: args.new_balance }),
+        }
+    );
+
+    const updateData = await updateRes.json();
+    if (!updateRes.ok) {
+        return { success: false, error: `Error al actualizar saldo: ${JSON.stringify(updateData)}` };
+    }
+
+    return {
+        success: true,
+        message: 'Saldo actualizado exitosamente',
+        details: {
+            account: account.name,
+            previous_balance: `$${account.balance.toLocaleString('es-MX')}`,
+            new_balance: `$${args.new_balance.toLocaleString('es-MX')}`,
+        },
+    };
+}
+
+async function registerCreditPurchase(
+    args: {
+        description: string;
+        total_amount: number;
+        installments: number;
+        account_name: string;
+        purchase_date?: string;
+        first_payment_date?: string;
+        interest_rate?: number;
+        category_name?: string;
+    },
+    context: any,
+    supabaseUrl: string,
+    supabaseKey: string,
+    accessToken: string
+) {
+    const account = context.accounts.find(
+        (a: any) => a.name.toLowerCase().includes(args.account_name.toLowerCase())
+            || args.account_name.toLowerCase().includes(a.name.toLowerCase())
+    );
+    if (!account) {
+        return {
+            success: false,
+            error: `No encontré la cuenta "${args.account_name}". Cuentas disponibles: ${context.accounts.map((a: any) => a.name).join(', ')}`,
+        };
+    }
+
+    let categoryId = null;
+    if (args.category_name) {
+        const category = context._rawCategories?.find(
+            (c: any) => c.name.toLowerCase().includes(args.category_name!.toLowerCase())
+                || args.category_name!.toLowerCase().includes(c.name.toLowerCase())
+        );
+        if (category) categoryId = category.id;
+    }
+
+    const userPayload = JSON.parse(atob(accessToken.split('.')[1]));
+    const userId = userPayload.sub;
+
+    const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Mexico_City' }));
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+    let firstPayment = args.first_payment_date;
+    if (!firstPayment) {
+        const nextMonth = new Date(now);
+        nextMonth.setMonth(nextMonth.getMonth() + 1);
+        firstPayment = `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, '0')}-${String(nextMonth.getDate()).padStart(2, '0')}`;
+    }
+
+    const installmentAmount = Math.round((args.total_amount / args.installments) * 100) / 100;
+
+    const insertRes = await fetch(`${supabaseUrl}/rest/v1/credit_purchases`, {
+        method: 'POST',
+        headers: {
+            apikey: supabaseKey,
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+            Prefer: 'return=representation',
+        },
+        body: JSON.stringify({
+            user_id: userId,
+            account_id: account.id,
+            category_id: categoryId,
+            description: args.description,
+            total_amount: args.total_amount,
+            installments: args.installments,
+            installment_amount: installmentAmount,
+            remaining_installments: args.installments,
+            interest_rate: args.interest_rate || 0,
+            purchase_date: args.purchase_date || todayStr,
+            first_payment_date: firstPayment,
+            is_active: true,
+        }),
+    });
+
+    const insertData = await insertRes.json();
+    if (!insertRes.ok) {
+        return { success: false, error: `Error al registrar compra a meses: ${JSON.stringify(insertData)}` };
+    }
+
+    return {
+        success: true,
+        message: 'Compra a meses registrada exitosamente',
+        details: {
+            description: args.description,
+            total: `$${args.total_amount.toLocaleString('es-MX')}`,
+            installments: `${args.installments} meses`,
+            monthly_payment: `$${installmentAmount.toLocaleString('es-MX')}/mes`,
+            account: account.name,
+            first_payment: firstPayment,
+            interest_rate: args.interest_rate ? `${args.interest_rate}%` : 'Sin intereses (MSI)',
+        },
     };
 }
 
